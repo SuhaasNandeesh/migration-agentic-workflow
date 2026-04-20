@@ -1,0 +1,26 @@
+# Base CI/CD Pipeline Template
+stages:
+  - build
+  - test
+  - security
+  - artifact
+
+build:
+  stage: build
+  script:
+    - echo "Building..."
+
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+
+security:
+  stage: security
+  script:
+    - echo "Running security scans..."
+
+artifact:
+  stage: artifact
+  script:
+    - echo "Packaging artifacts..."

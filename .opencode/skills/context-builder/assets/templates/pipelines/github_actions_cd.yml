@@ -1,0 +1,82 @@
+# Auto-migrated from source platform by Migration Factory
+# GitHub Actions CD Workflow — Production Deployment
+name: CD Pipeline — Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        type: string
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false  # Never cancel production deployments
+
+jobs:
+  validate:
+    name: Pre-deploy Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: Validate Artifacts
+        run: echo "Run pre-deploy validation checks"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: production  # Requires approval via GitHub Environment protection
+    steps:
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Infrastructure
+        run: |
+          cd infrastructure
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Deploy Application
+        run: echo "Deploy to AKS — customize per service"
+
+  smoke-test:
+    name: Post-deploy Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    steps:
+      - name: Health Check
+        run: |
+          echo "Running post-deployment smoke tests..."
+          # curl -f https://app.example.com/healthz
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [deploy-production, smoke-test]
+    if: always()
+    steps:
+      - name: Notify on Success
+        if: success()
+        run: echo "Deployment successful"
+
+      - name: Notify on Failure
+        if: failure()
+        run: echo "Deployment failed — investigate"
