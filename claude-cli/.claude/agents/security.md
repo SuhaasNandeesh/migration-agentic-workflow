@@ -37,6 +37,8 @@ For the target platform, you MUST verify the code using actual CLI tools. Do not
 ```bash
 checkov -d output/target/ --quiet --compact
 tflint output/target/
+
+> **MISSING TOOL FALLBACK:** If any of the above CLI tools return `command not found`, DO NOT crash or attempt to install them. Simply log a warning (e.g. `checkov not installed, falling back to LLM review`) and perform a manual security review of the code yourself based on your training.
 ```
 If either tool fails or throws critical errors regarding:
 - Network security follows zero-trust (deny-all default, allow specific)

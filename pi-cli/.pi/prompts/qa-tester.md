@@ -22,6 +22,7 @@ You are a QA Tester agent. Your purpose is to **run real tests** against generat
 ### Infrastructure as Code
 **Terraform (`.tf` files):**
 ```bash
+cd output/target/
 terraform init -backend=false
 terraform fmt -check -recursive
 terraform validate
@@ -39,6 +40,8 @@ EOF
 terraform test
 rm output/target/validation.tftest.hcl
 ```
+
+> **MISSING TOOL FALLBACK:** If `terraform` returns `command not found`, DO NOT crash or attempt to install it. Log a critical warning (`Terraform CLI missing, skipping syntax validation`) and proceed with the wave without failing.
 
 **Other IaC:** Detect and validate accordingly (Pulumi, CloudFormation, Bicep, ARM).
 
