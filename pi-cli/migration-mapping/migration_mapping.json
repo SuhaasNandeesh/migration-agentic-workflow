@@ -1,0 +1,399 @@
+{
+  "migration_summary": {
+    "source_platform": "AWS",
+    "target_platform": "Azure",
+    "source_path": "Terraform_Modules-AWS",
+    "total_resources_mapped": 24,
+    "environment_count": 2
+  },
+  "migration_mapping": [
+    {
+      "source_resource": "aws_vpc",
+      "target_resource": "azurerm_virtual_network",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "cidr_block -> address_space (IPV4 prefix)",
+        "enable_dns_hostnames -> dns_servers (custom DNS, Azure provides DNS by default)",
+        "Tags preserved identically"
+      ],
+      "notes": "Direct 1:1 equivalent. Address space uses CIDR notation. Azure VNet requires至少一个address_space prefix."
+    },
+    {
+      "source_resource": "aws_internet_gateway",
+      "target_resource": "azurerm_internet_gateway",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "No direct EIP association needed in Azure",
+        "Automatically attached to VNet in Azure"
+      ],
+      "notes": "Direct equivalent. Azure Internet Gateway is a native VNet resource, not a separate attachment."
+    },
+    {
+      "source_resource": "aws_subnet (public)",
+      "target_resource": "azurerm_subnet",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "map_public_ip_on_launch -> nat_gateway_association for public subnets",
+        "No separate route table association (handled by route table resource)",
+        "AWS subnet ID reference -> Azure subnet ID reference"
+      ],
+      "notes": "In Azure, public/private designation is determined by whether subnet has NAT gateway or is associated with route tables directing to virtual network gateway."
+    },
+    {
+      "source_resource": "aws_subnet (private)",
+      "target_resource": "azurerm_subnet",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "Private subnets route to NAT Gateway in private route table",
+        "No public IP assignment on launch"
+      ],
+      "notes": "Direct equivalent for private subnet."
+    },
+    {
+      "source_resource": "aws_route_table",
+      "target_resource": "azurerm_route_table",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "route blocks map to route resource blocks in Azure",
+        "Gateway VNet attachment for virtual network gateway routes",
+        "Direct equivalents for local and internet routes"
+      ],
+      "notes": "Direct 1:1 mapping. Route tables in Azure associate with subnets similarly to AWS."
+    },
+    {
+      "source_resource": "aws_route_table_association",
+      "target_resource": "azurerm_subnet_route_table_association",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "network",
+      "config_changes": [
+        "subnet_id -> subnet_id reference",
+        "route_table_id -> route_table_id reference"
+      ],
+      "notes": "Direct 1:1 mapping. Azure uses separate association resource."
+    },
+    {
+      "source_resource": "aws_eip",
+      "target_resource": "azurerm_public_ip",
+      "confidence": "high",
+      "tier": "functional",
+      "module": "nat",
+      "config_changes": [
+        "domain = 'vpc' -> SKU (Standard or Basic)",
+        "allocation_method: 'static' vs 'Dynamic'",
+        "Azure does not support VPC-level domain concept"
+      ],
+      "notes": "Functional equivalent for NAT Gateway EIP. In Azure, public IPs are standalone resources and can be reassigned. Standard SKU provides static allocation."
+    },
+    {
+      "source_resource": "aws_nat_gateway",
+      "target_resource": "azurerm_nat_gateway",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "nat",
+      "config_changes": [
+        "allocation_id (EIP) -> public_ip_address_id",
+        "subnet_id -> subnet_id",
+        "Azure NAT Gateway has no deletion protection (AWS has it by default)",
+        "Azure NAT Gateway is a separate resource, not embedded in subnet"
+      ],
+      "notes": "Direct 1:1 equivalent. Azure NAT Gateway is a regional service, not attached to individual subnets. Supports multiple subnets via subnet associations."
+    },
+    {
+      "source_resource": "aws_instance (public)",
+      "target_resource": "azurerm_linux_virtual_machine",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "compute",
+      "config_changes": [
+        "ami -> azurerm_image or publisher references",
+        "instance_type -> vm_size (e.g., Standard_B1s)",
+        "key_name -> admin_username + admin_password/ssh_key",
+        "iam_instance_profile -> managed_identity via user_assigned_identity_id",
+        "associate_public_ip_address -> public_ip_address_id (requires separate resource)",
+        "user_data preserved via custom_data",
+        "subnet_id -> network_interface_ids (requires azurerm_network_interface)"
+      ],
+      "notes": "Direct equivalent for Linux VMs. Requires separate network interface with IP configuration."
+    },
+    {
+      "source_resource": "aws_instance (private)",
+      "target_resource": "azurerm_linux_virtual_machine",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "compute",
+      "config_changes": [
+        "No associate_public_ip_address for private instances",
+        "Same config as public otherwise"
+      ],
+      "notes": "Private instances in Azure have no public IP. Can access internet via NAT Gateway."
+    },
+    {
+      "source_resource": "aws_security_group",
+      "target_resource": "azurerm_network_security_group",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "sg",
+      "config_changes": [
+        "ingress rules -> security_rule (inbound)",
+        "egress rules -> security_rule (outbound)",
+        "CIDR blocks -> address_prefix (source/destination)",
+        "protocol preserved (TCP/UDP/*)",
+        "vpc_id -> network_security_group doesn't require VNet reference"
+      ],
+      "notes": "Direct functional equivalent. In Azure, NSG attaches to subnet or NIC, not auto-applied to resources in subnet."
+    },
+    {
+      "source_resource": "aws_iam_role",
+      "target_resource": "azurerm_user_assigned_identity + azurerm_role_assignment",
+      "confidence": "high",
+      "tier": "functional",
+      "module": "iam",
+      "config_changes": [
+        "assume_role_policy -> Azure MSI with role assignments",
+        "Service principal equivalent via user assigned identity",
+        "Role assignment to resources via azurerm_role_assignment",
+        "No cross-accountAssumeRole in Azure (use cross-tenant)"
+      ],
+      "notes": "Functional equivalent. Azure uses Managed Identity (MSI) for VM authentication. User Assigned Identity provides persistent identity across VM recreates."
+    },
+    {
+      "source_resource": "aws_iam_instance_profile",
+      "target_resource": "Not needed",
+      "confidence": "high",
+      "tier": "retain",
+      "module": "iam",
+      "config_changes": [
+        "No equivalent - Azure uses Managed Identity natively",
+        " VMs authenticate via user_assigned_identity_id directly"
+      ],
+      "notes": "Retain as-is not applicable - this resource doesn't exist in Azure. Azure VM uses user_assigned_identity_id or system_assigned_identity for IAM."
+    },
+    {
+      "source_resource": "aws_lb (Network Load Balancer)",
+      "target_resource": "azurerm_lb",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "elb",
+      "config_changes": [
+        "load_balancer_type = 'network' -> SKU (Standard/Standard)",
+        "internal = false -> frontend_ip_configuration with public IP for public LB",
+        "subnets -> frontend_ip_configuration (requires public IP)",
+        "enable_deletion_protection -> enable_deletion_protection"
+      ],
+      "notes": "Direct equivalent for Network Load Balancer. Azure NLB uses frontend IP + backend pools. SKU determines feature set."
+    },
+    {
+      "source_resource": "aws_lb_target_group",
+      "target_resource": "azurerm_lb_backend_address_pool",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "elb",
+      "config_changes": [
+        "port -> port in azurerm_lb_rule (not in pool)",
+        "protocol -> protocol in azurerm_lb_rule",
+        "vpc_id -> network_interface_ids or azurerm_lb_backend_address_poolassociated with VMs"
+      ],
+      "notes": "Direct equivalent. Azure backend address pool references network interfaces from VMs."
+    },
+    {
+      "source_resource": "aws_lb_target_group_attachment",
+      "target_resource": " azurerm_network_interface_backend_address_pool_association",
+      "confidence": "medium",
+      "tier": "functional",
+      "module": "elb",
+      "config_changes": [
+        "target_id (instance ID) -> network_interface_id + ip_configuration_name",
+        "port preserved in association"
+      ],
+      "notes": "Functional equivalent. Azure associates backend pools with network interfaces on VMs, not directly with VM IDs."
+    },
+    {
+      "source_resource": "aws_lb_listener",
+      "target_resource": "azurerm_lb_rule",
+      "confidence": "high",
+      "tier": "direct",
+      "module": "elb",
+      "config_changes": [
+        "port -> frontend_port",
+        "protocol -> protocol",
+        "default_action forward -> backend_address_pool_id + probe_id",
+        "No direct listener equivalent - rule handles routing"
+      ],
+      "notes": "Direct functional equivalent. Azure LB rule combines listener and target group attachment. Requires azurerm_lb_probe for health checks."
+    }
+  ],
+  "architecture_decisions": [
+    {
+      "id": "ADR-001",
+      "title": "VNet Address Space Design",
+      "context": "AWS VPC uses single CIDR block. Azure VNet requires address_space with multiple prefixes supported.",
+      "decision": "Use the AWS VPC CIDR as the primary address_space prefix in Azure VNet. Reserve address space for future expansion and PaaS endpoints.",
+      "alternatives_considered": [
+        "Single address prefix matching VPC CIDR",
+        "Multiple address prefixes for RFC1918 + future expansion",
+        "Use Azure Private Link endpoints"
+      ],
+      "consequences": [
+        "Positive: Direct IP range preservation simplifies migration",
+        "Negative: May need to adjust on-prem connectivity",
+        "Need to verify no IP overlap with existing Azure resources"
+      ]
+    },
+    {
+      "id": "ADR-002",
+      "title": "NAT Gateway Redundancy Design",
+      "context": "AWS NAT Gateway is a single-AZ resource. Azure NAT Gateway is regional and scales automatically.",
+      "decision": "Use single Azure NAT Gateway resource with subnet associations to all private subnets. No need for multi-AZ NAT Gateway deployment.",
+      "alternatives_considered": [
+        "Single NAT Gateway serving all private subnets",
+        "Multiple NAT Gateways per availability zone",
+        "Use Internet egress via virtual network appliance"
+      ],
+      "consequences": [
+        "Positive: Simplified architecture, eliminates need for multi-AZ NAT",
+        "Negative: No multi-AZ redundancy for NAT Gateway (Azure handled)",
+        "Need to ensure public IP redundancy via SKU selection"
+      ]
+    },
+    {
+      "id": "ADR-003",
+      "title": "Managed Identity Strategy",
+      "context": "AWS uses IAM instance profiles attached to EC2. Azure uses Managed Identities.",
+      "decision": "Deploy User Assigned Identity for persistent permissions across VM deployments. Associate with Virtual Machines for application access.",
+      "alternatives_considered": [
+        "System Assigned Identity (simpler, tied to VM lifecycle)",
+        "User Assigned Identity (persistent, shareable across VMs)",
+        "Service Principal with service principal credentials"
+      ],
+      "consequences": [
+        "Positive: No credential management needed (rotation handled by Azure)",
+        "Negative: User Assigned Identity requires separate resource",
+        "Need to update application code to use IMDS endpoint"
+      ]
+    },
+    {
+      "id": "ADR-004",
+      "title": "Load Balancer Health Check Strategy",
+      "context": "AWS target groups have implicit health checks. Azure LB rules require explicit probe configuration.",
+      "decision": "Create azurerm_lb_probe for each LB rule with HTTP/TCP health check configuration. Replicate AWS target group health check settings.",
+      "alternatives_considered": [
+        "TCP probe on same port as traffic",
+        "HTTP GET probe for application health",
+        "Custom health probe script"
+      ],
+      "consequences": [
+        "Positive: Explicit health check configuration",
+        "Negative: Additional resource configuration required",
+        "Need to migrate health check path from AWS target group"
+      ]
+    },
+    {
+      "id": "ADR-005",
+      "title": "Network Security Group Rule Migration",
+      "context": "AWS security groups attach to ENI. Azure NSGs attach to subnet or NIC.",
+      "decision": "Associate NSG with subnets for network-layer security. Also associate with NICs for explicit VM-level rules.",
+      "alternatives_considered": [
+        "NSG only on subnets",
+        "NSG only on network interfaces",
+        "NSG on both subnet and NIC"
+      ],
+      "consequences": [
+        "Positive: Defense in depth with both subnet and NIC-level security",
+        "Negative: Potential rule duplication if not careful",
+        "Need to review all AWS SG rules and assign appropriately"
+      ]
+    }
+  ],
+  "redesign_required": [
+    {
+      "resource": "aws_iam_instance_profile",
+      "redesign_rationale": "Azure doesn't have instance profile concept. Managed Identity replaces this entirely.",
+      "alternative": "Use azurerm_user_assigned_identity for persistent identity, assign roles via azurerm_role_assignment",
+      "impact": "Low - application code needs to authenticate via Azure IMDS endpoint"
+    },
+    {
+      "resource": "aws_lb_target_group_attachment",
+      "redesign_rationale": "Azure backend pool associations are different from AWS target group attachments.",
+      "alternative": "Use azurerm_network_interface_backend_address_pool_association for explicit VM-to-backend-pool mapping",
+      "impact": "Medium - requires network interface-level configuration changes"
+    }
+  ],
+  "modules_to_create": [
+    {
+      "module_name": "network",
+      "source_modules": ["vpc", "routing", "public_subnets", "private_subnets"],
+      "target_modules": ["virtual_network", "route_table", "subnet_associations"],
+      "notes": "Consolidate routing and subnet configuration into Azure-native modules"
+    },
+    {
+      "module_name": "nat",
+      "source_modules": ["natgw"],
+      "target_modules": ["nat_gateway", "public_ip"],
+      "notes": "Separate NAT Gateway module, includes public IP for NAT Gateway association"
+    },
+    {
+      "module_name": "compute",
+      "source_modules": ["public_ec2", "private_ec2"],
+      "target_modules": ["linux_virtual_machine", "network_interface"],
+      "notes": "Requires separate network interface configuration with IP settings"
+    },
+    {
+      "module_name": "sg",
+      "source_modules": ["sg"],
+      "target_modules": ["network_security_group", "nsg_association"],
+      "notes": "NSG association can be to subnet or NIC, might need both"
+    },
+    {
+      "module_name": "iam",
+      "source_modules": ["role", "instance_profile"],
+      "target_modules": ["user_assigned_identity", "role_assignment"],
+      "notes": "No instance profile needed - use managed identity directly"
+    },
+    {
+      "module_name": "elb",
+      "source_modules": ["elb", "listener", "target_group"],
+      "target_modules": ["load_balancer", "backend_address_pool", "lb_rule", "lb_probe"],
+      "notes": "Requires probe for health checks, separate backend pool resource"
+    }
+  ],
+  "migration_risks": [
+    {
+      "risk": "IP Address Overlap",
+      "severity": "high",
+      "description": "Existing Azure VNet resources may conflict with migrated VPC CIDR",
+      "mitigation": "Audit existing VNet address spaces before migration planning"
+    },
+    {
+      "risk": "Public IP SKU Mismatch",
+      "severity": "medium",
+      "description": "Azure public IP SKU determines allocation method (static vs dynamic)",
+      "mitigation": "Use Standard SKU for static public IP addresses"
+    },
+    {
+      "risk": "Security Group Rule Evaluation Order",
+      "severity": "low",
+      "description": "AWS evaluates SG rules implicitly, Azure NSG rules have explicit priority",
+      "mitigation": "Define explicit priority ordering for NSG rules matching AWS rules"
+    }
+  ],
+  "statistics": {
+    "total_source_resources": 24,
+    "direct_mappings": 12,
+    "functional_mappings": 4,
+    "retain_as_is": 1,
+    "redesign_required": 2,
+    "confidence_high": 17,
+    "confidence_medium": 1
+  }
+}

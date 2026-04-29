@@ -1,0 +1,45 @@
+{
+  "code_review": {
+    "metric": "issues_per_file",
+    "pass_rule": "critical_issues == 0 AND major_issues <= 2",
+    "thresholds": {
+      "critical_issues_max": 0,
+      "major_issues_max": 2,
+      "minor_issues_max": 10
+    }
+  },
+  "security": {
+    "metric": "security_score",
+    "pass_rule": "security_score >= 80 AND critical_findings == 0",
+    "thresholds": {
+      "min_security_score": 80,
+      "critical_findings_max": 0,
+      "high_findings_max": 2
+    }
+  },
+  "validation": {
+    "metric": "compliance_percentage",
+    "pass_rule": "compliance >= 90 AND blocking_violations == 0",
+    "thresholds": {
+      "min_compliance_percent": 90,
+      "blocking_violations_max": 0
+    }
+  },
+  "qa_testing": {
+    "metric": "test_pass_rate",
+    "pass_rule": "pass_rate >= 95 AND syntax_errors == 0",
+    "thresholds": {
+      "min_pass_rate_percent": 95,
+      "syntax_errors_max": 0
+    }
+  },
+  "completeness": {
+    "metric": "resource_coverage",
+    "pass_rule": "resource_coverage >= 90 AND environment_coverage >= 80",
+    "thresholds": {
+      "min_resource_coverage_percent": 90,
+      "min_file_coverage_percent": 80,
+      "min_environment_coverage_percent": 80
+    }
+  }
+}
