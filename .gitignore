@@ -1,0 +1,127 @@
+# --- OS Specific ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- IDEs and Editors ---
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.netrwhist
+.project
+.settings/
+.classpath
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
+venv/
+ENV/
+env/
+python_venv/
+.pytest_cache/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.pnpm-debug.log*
+.eslintcache
+.stylelintcache
+.next
+.nuxt
+.cache/
+
+# --- DevOps & Infrastructure ---
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+_override.tf
+_override.tf.json
+.terraformrc
+terraform.rc
+
+# AWS/Cloud Keys & Secrets
+.aws/
+.azure/
+.gcloud/
+.kube/
+*.pem
+*.key
+*.pub
+secrets.yml
+.env*
+!.env.example
+
+# Ansible
+*.retry
+
+# Vagrant
+.vagrant/
+
+# Docker
+.docker/
+
+# --- Project Specific ---
+# CLI Agentic Workflow Temp/State
+.omg/state/
+.gemini/tmp/
+.claude/tmp/
+.pi/tmp/
+*.log
+tmp/
+temp/
+out/
+debug/
+
+# Local configuration overrides (if any)
+local-config.json
+*.local.json
