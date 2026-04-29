@@ -1,0 +1,63 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "lmstudio/gemma-4-e4b-it",
+  "provider": {
+    "lmstudio": {
+      "name": "Local Qwen",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:1234/v1"
+      },
+      "models": {
+        "gemma-4-e4b-it": {
+          "name": "qwen-3.6"
+        }
+      }
+    }
+  },
+  "instructions": [
+    "AGENTS.md",
+    "migration-config.json"
+  ],
+  "mcpServers": {
+    "terraform-docs": {
+      "_comment": "HashiCorp official Terraform MCP server — provides latest provider docs, resource schemas, module definitions. Queries Terraform Registry API. No code is sent — only resource type names.",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@hashicorp/terraform-mcp-server"],
+      "env": {}
+    },
+    "web-fetch": {
+      "_comment": "Generic URL-to-markdown fetcher for any docs not covered by Terraform MCP. Used by knowledge-compiler ONLY. Fetches K8s docs, GitHub Actions docs, Azure docs, etc.",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "env": {}
+    }
+  },
+  "permission": {
+    "read": "allow",
+    "write": "allow",
+    "edit": "allow",
+    "bash": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "fetch": "allow",
+    "skill": {
+      "context-builder": "allow",
+      "context-optimizer": "allow",
+      "code-review": "allow",
+      "knowledge-compiler": "allow",
+      "memory-cleanup": "allow",
+      "memory-store": "allow",
+      "memory-write": "allow",
+      "migration-mapping": "allow",
+      "rag-query": "allow",
+      "source-analysis": "allow",
+      "surgical-fix": "allow",
+      "testing": "allow",
+      "tool-executor": "allow",
+      "validation": "allow"
+    }
+  }
+}

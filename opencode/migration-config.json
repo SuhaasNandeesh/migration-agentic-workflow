@@ -1,0 +1,25 @@
+{
+  "_comment": "Migration Factory Configuration — loaded by agents via 'instructions' in opencode.json",
+  "source_platform": "aws",
+  "target_platform": "azure",
+  "source_paths": {
+    "terraform": "",
+    "kubernetes": "",
+    "pipelines": "",
+    "monitoring": "",
+    "other": ""
+  },
+  "target_versions": {
+    "terraform": "<placeholder_or_leave_empty_for_auto_lts>",
+    "azurerm": "<placeholder_or_leave_empty_for_auto_lts>",
+    "kubernetes": "<placeholder_or_leave_empty_for_auto_lts>"
+  },
+  "pipeline_migrations": [
+    { "from": "gitlab-ci", "to": "github-actions" },
+    { "from": "jenkins", "to": "github-actions" }
+  ],
+  "tool_migrations": [
+    { "tool": "grafana", "action": "retain", "notes": "Cloud-agnostic, update datasources" },
+    { "tool": "prometheus", "action": "retain", "notes": "Cloud-agnostic, update scrape targets" }
+  ]
+}
