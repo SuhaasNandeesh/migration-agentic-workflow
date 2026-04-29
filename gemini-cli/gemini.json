@@ -19,7 +19,7 @@
     "GEMINI.md",
     "migration-config.json"
   ],
-  "mcpServers": {
+  "mcp": {
     "terraform-docs": {
       "_comment": "HashiCorp official Terraform MCP server \u2014 provides latest provider docs, resource schemas, module definitions. Queries Terraform Registry API. No code is sent \u2014 only resource type names.",
       "type": "stdio",
@@ -48,6 +48,8 @@
     "search_file_content": "allow",
     "web_fetch": "allow",
     "skill": {
+      "coverage-auditor": "allow",
+      "mermaid-linter": "allow",
       "context-builder": "allow",
       "context-optimizer": "allow",
       "code-review": "allow",

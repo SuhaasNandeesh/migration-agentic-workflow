@@ -186,6 +186,14 @@ output/
 │   └── ...
 ├── pipeline-state.json           ← Resume checkpoint
 ├── pipeline-log.md               ← Human-readable execution log
+
+## Prerequisites
+To get the most out of the determinism in this factory, install the following CLI tools. If they are not installed, the agents will **gracefully degrade** to LLM-based reasoning:
+- **Migration Factory:** `terraform` (1.6+), `checkov`, `tflint`
+- **Documentation Factory:** `mkdocs`, `markdownlint-cli2`, `lychee`
+- **Python Skills:** `python3` (run `pip install -r .opencode/skills/requirements.txt`)
+
+## Execution Workflow
 ├── Terraform_Modules-Azure/      ← Generated target code
 │   ├── environments/
 │   │   ├── development/

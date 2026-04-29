@@ -19,19 +19,25 @@
     "AGENTS.md",
     "migration-config.json"
   ],
-  "mcpServers": {
+  "mcp": {
     "terraform-docs": {
       "_comment": "HashiCorp official Terraform MCP server — provides latest provider docs, resource schemas, module definitions. Queries Terraform Registry API. No code is sent — only resource type names.",
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@hashicorp/terraform-mcp-server"],
+      "args": [
+        "-y",
+        "@hashicorp/terraform-mcp-server"
+      ],
       "env": {}
     },
     "web-fetch": {
       "_comment": "Generic URL-to-markdown fetcher for any docs not covered by Terraform MCP. Used by knowledge-compiler ONLY. Fetches K8s docs, GitHub Actions docs, Azure docs, etc.",
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
       "env": {}
     }
   },
@@ -44,6 +50,8 @@
     "grep": "allow",
     "fetch": "allow",
     "skill": {
+      "coverage-auditor": "allow",
+      "mermaid-linter": "allow",
       "context-builder": "allow",
       "context-optimizer": "allow",
       "code-review": "allow",

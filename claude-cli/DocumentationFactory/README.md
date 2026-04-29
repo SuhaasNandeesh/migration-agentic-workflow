@@ -12,6 +12,13 @@ Point it at a source codebase (Terraform, Kubernetes, Apps, Pipelines). It auton
 6. **Validates** all markdown formatting and guarantees zero dead internal links.
 7. **Publishes** the final compiled website to a Git feature branch.
 
+## Prerequisites
+To enable full deterministic validation, install the following CLI tools. If they are not installed, the Site Builder will gracefully skip them:
+- `python3` (with `pip install -r ../.opencode/skills/requirements.txt` for Tree-sitter)
+- `mkdocs`
+- `markdownlint-cli2`
+- `lychee` (Dead-link checker)
+
 ---
 
 ## Architecture Flow

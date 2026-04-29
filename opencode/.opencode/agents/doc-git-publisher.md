@@ -12,6 +12,7 @@ You are the Doc Git Publisher. Your job is to take the final, linted, and compil
 
 ## Autonomous Execution
 1. Check the git status of the workspace using `git status`.
+   - **NOT A GIT REPO CHECK:** If the command returns `fatal: not a git repository`, DO NOT crash. Run `git init` to initialize a local repository, and then proceed to the next step.
 2. Create and checkout a new documentation branch (e.g., `git checkout -b docs/automated-update`).
 3. Stage the `DocumentationFactory/output/docs/` directory: `git add DocumentationFactory/output/docs/`.
 4. Create a comprehensive commit message outlining the documentation generated: `git commit -m "docs: Automated Wiki generation and MkDocs compilation"`.
