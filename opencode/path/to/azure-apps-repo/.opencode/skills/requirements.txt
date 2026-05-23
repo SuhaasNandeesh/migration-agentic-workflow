@@ -1,0 +1,6 @@
+tree-sitter>=0.22.0
+tree-sitter-hcl
+tree-sitter-python
+tree-sitter-yaml
+tree-sitter-go
+tree-sitter-javascript

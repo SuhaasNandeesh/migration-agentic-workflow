@@ -1,0 +1,10 @@
+{
+  "status": "fail",
+  "data_file": "/Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/validation/temp_test_run/invalid-inventory.json",
+  "schema_file": "/Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/validation/schemas/source-inventory-schema.json",
+  "errors": [
+    "Missing required field: 'categories'",
+    "Missing required field: 'dependency_graph'",
+    "Missing required field: 'statistics'"
+  ]
+}

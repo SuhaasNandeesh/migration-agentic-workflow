@@ -8,7 +8,7 @@ description: "A Python skill that acts as a Deterministic Quality Gate. It cross
 Run the script to reconcile documentation coverage against the original dependency graph.
 
 ```bash
-python3 .opencode/skills/coverage-auditor/run.py \
+python3 .pi/skills/coverage-auditor/run.py \
   --deps DocumentationFactory/output/artifacts/dependency-graph.json \
   --specs DocumentationFactory/output/artifacts/infrastructure-specs.json \
   --flows DocumentationFactory/output/artifacts/pipeline-flows.json

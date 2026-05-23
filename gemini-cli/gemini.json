@@ -22,23 +22,25 @@
   "mcp": {
     "terraform-docs": {
       "_comment": "HashiCorp official Terraform MCP server \u2014 provides latest provider docs, resource schemas, module definitions. Queries Terraform Registry API. No code is sent \u2014 only resource type names.",
-      "type": "stdio",
-      "command": "npx",
-      "args": [
+      "type": "local",
+      "command": [
+        "npx",
         "-y",
         "@hashicorp/terraform-mcp-server"
       ],
-      "env": {}
+      "env": {},
+      "enabled": true
     },
     "web-fetch": {
       "_comment": "Generic URL-to-markdown fetcher for any docs not covered by Terraform MCP. Used by knowledge-compiler ONLY. Fetches K8s docs, GitHub Actions docs, Azure docs, etc.",
-      "type": "stdio",
-      "command": "npx",
-      "args": [
+      "type": "local",
+      "command": [
+        "npx",
         "-y",
         "@modelcontextprotocol/server-fetch"
       ],
-      "env": {}
+      "env": {},
+      "enabled": true
     }
   },
   "permission": {

@@ -2,17 +2,36 @@
   "_comment": "Migration Factory Configuration — loaded by agents via 'instructions' in opencode.json",
   "source_platform": "aws",
   "target_platform": "azure",
-  "source_paths": {
-    "terraform": "",
-    "kubernetes": "",
-    "pipelines": "",
-    "monitoring": "",
-    "other": ""
+  "multi_repo_migration": {
+    "enabled": true,
+    "repositories": [
+      {
+        "id": "repo-01-infra",
+        "source_dir": "path/to/aws-infra-repo",
+        "target_dir": "path/to/azure-infra-repo",
+        "environments": ["dev", "test", "prod"]
+      },
+      {
+        "id": "repo-02-app-services",
+        "source_dir": "path/to/aws-apps-repo",
+        "target_dir": "path/to/azure-apps-repo",
+        "environments": ["dev", "prod"]
+      }
+    ]
   },
   "target_versions": {
-    "terraform": "<placeholder_or_leave_empty_for_auto_lts>",
-    "azurerm": "<placeholder_or_leave_empty_for_auto_lts>",
-    "kubernetes": "<placeholder_or_leave_empty_for_auto_lts>"
+    "terraform": "1.11.0",
+    "azurerm": "3.116.0",
+    "kubernetes": "1.29.2"
+  },
+  "finops_standards": {
+    "default_cost_center": "CC-999-DEVOPS",
+    "required_tags": ["Environment", "MigrationSource", "CostCenter", "Orchestrator"]
+  },
+  "security_compliance": {
+    "enforce_private_endpoints": true,
+    "enforce_oidc": true,
+    "use_oidc_auth_fallback": true
   },
   "pipeline_migrations": [
     { "from": "gitlab-ci", "to": "github-actions" },

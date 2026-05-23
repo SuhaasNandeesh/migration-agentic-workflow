@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "test_results": [
+    {
+      "file": "/Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/validation/temp_test_run/terraform_src",
+      "type": "terraform",
+      "tests": [
+        {
+          "test": "terraform format",
+          "status": "fail",
+          "output": "main.tf\nvalidation.tftest.hcl"
+        },
+        {
+          "test": "terraform validate",
+          "status": "pass",
+          "output": "{\n  \"format_version\": \"1.0\",\n  \"valid\": true,\n  \"error_count\": 0,\n  \"warning_count\": 0,\n  \"diagnostics\": []\n}"
+        },
+        {
+          "test": "terraform test (offline mocks)",
+          "status": "pass",
+          "output": "validation.tftest.hcl... \u001b[37min progress\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[37mtearing down\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[31mfail\u001b[0m\u001b[0m\n\u001b[31m\u2577\u001b[0m\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[1m\u001b[31mError: \u001b[0m\u001b[0m\u001b[1munknown provider registry.terraform.io/hashicorp/aws\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[0m\n\u001b[31m\u2575\u001b[0m\u001b[0m\n\n\u001b[31mFailure!\u001b[0m\u001b[0m 0 passed, 0 failed."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_files": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "tools_not_found": []
+  }
+}

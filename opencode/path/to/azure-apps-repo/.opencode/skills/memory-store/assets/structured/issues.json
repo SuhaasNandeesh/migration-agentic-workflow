@@ -1,0 +1,80 @@
+[
+  {
+    "problem": "Terraform validation failures with Azure provider syntax",
+    "fix": "Fixed idle_timeout property (Azure uses request_timeout), corrected route configuration syntax, ensured proper tag formatting",
+    "tags": ["terraform", "azure", "syntax", "validation"],
+    "confidence": "high",
+    "source": "Terraform_Modules-AWS/",
+    "target": "Terraform_Modules-Azure/",
+    "migration": "AWS → Azure",
+    "resource_count": 24,
+    "mappings": {
+      "VPC": "Virtual Network",
+      "EC2": "Azure VM",
+      "ELB": "Load Balancer"
+    },
+    "retries_required": 3,
+    "coverage": "75%",
+    "missing": ["environment configs"]
+  },
+  {
+    "problem": "Code review required 3 iterations to pass",
+    "fix": "Developer addressed review comments each iteration until code reviewer approved",
+    "tags": ["code-review", "iterations", "approval"],
+    "confidence": "high",
+    "source": "Terraform_Modules-AWS/",
+    "target": "Terraform_Modules-Azure/",
+    "migration": "AWS → Azure",
+    "iterations": 3
+  },
+  {
+    "problem": "Incomplete migration - 75% resource coverage with missing environment configs",
+    "fix": "Future migrations should include environment-specific configurations and variables",
+    "tags": ["coverage", "incomplete", "environment-configs"],
+    "confidence": "medium",
+    "source": "Terraform_Modules-AWS/",
+    "target": "Terraform_Modules-Azure/",
+    "migration": "AWS → Azure",
+    "coverage": "75%",
+    "missing": ["environment configs"]
+  },
+  {
+    "problem": "Azure provider property mappings: idle_timeout → request_timeout, route config syntax differs, tags fail on unsupported resources",
+    "fix": "Add Azure-specific property mapping rules to migration-mapping - detect AWS resource types and map to Azure equivalents with correct property names",
+    "tags": ["terraform", "azure", "property-mapping", "syntax"],
+    "confidence": "high",
+    "source": "Terraform_Modules-AWS/",
+    "target": "Terraform_Modules-Azure/modules/",
+    "migration": "AWS → Azure",
+    "resource_count": 24,
+    "coverage": "75%"
+  },
+  {
+    "problem": "User data script migration requires CustomScriptExtension format for Azure VMs",
+    "fix": "Create template for Azure VM extension configuration - CustomScriptExtension with inline script or file reference",
+    "tags": ["vm", "extension", "user-data", "azure"],
+    "confidence": "high",
+    "source": "EC2 user_data",
+    "target": "azurerm_virtual_machine_extension",
+    "migration": "AWS → Azure"
+  },
+  {
+    "problem": "Backend pool association syntax differs from AWS target groups",
+    "fix": "Map AWS target_group_arn to Azure backend_address_pool association - different resource reference pattern",
+    "tags": ["load-balancer", "backend-pool", "syntax"],
+    "confidence": "high",
+    "source": "aws_lb_target_group_attachment",
+    "target": "azurerm_lb_backend_address_pool",
+    "migration": "AWS → Azure"
+  },
+  {
+    "problem": "Missing environment-level configuration files (dev/prod terraform.tfvars)",
+    "fix": "Add environment-specific config generation to planner output - create dev.tfvars, prod.tfvars with environment variables",
+    "tags": ["environment", "config", "missing"],
+    "confidence": "medium",
+    "source": "Terraform_Modules-AWS/",
+    "target": "Terraform_Modules-Azure/",
+    "migration": "AWS → Azure",
+    "coverage": "75%"
+  }
+]

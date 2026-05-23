@@ -9,7 +9,7 @@ description: "Scans and inventories any source codebase to discover all resource
 1. Check configuration to understand what platform we are migrating from.
 2. Execute the `shared-dep-graph-builder` skill to generate a deterministic mapping of the source files.
    ```bash
-   python3 .opencode/skills/dep-graph-builder/run.py --source <source_path> --output output/source_analysis.json
+   python3 .pi/skills/dep-graph-builder/run.py --source <source_path> --output output/source_analysis.json
    ```
 3. If the script fails, fall back to native tools (`glob`, `grep_search`) to manually build the `source_analysis.json`.
 4. Validate completeness against `validation/references/source_discovery.json` (if exists).
@@ -67,7 +67,6 @@ Automatically detect the source platform by analyzing:
 - K8s annotations referencing cloud providers
 - CI/CD runner configurations
 - Tool-specific configs
-
 
 ## Disk-Based I/O — MANDATORY
 
@@ -181,3 +180,30 @@ Before returning, verify:
 2. Every file in your inventory actually exists on disk
 3. No duplicate entries
 
+## Global Shared Instructions
+# System Common Guidelines for Agents
+
+## 1. Disk-Based I/O Protocol (Context Preservation)
+To prevent LLM context bloat and ensure scale-invariant performance across codebases of any size:
+*   **Do NOT return raw files or massive data sets as conversational text.**
+*   Write your FULL, detailed output files to the target workspace under `output/artifacts/`.
+*   Return ONLY a brief, 1-2 line human-readable summary to the supervisor containing the exact filepath (e.g., `Completed. Wrote 15 mapping rules. File: output/artifacts/migration-mapping.json`).
+*   Always read your input context from intermediate files on disk as directed by the supervisor.
+
+## 2. Structured Output Enforcement (JSON Boundary)
+For any step requiring structured outputs (e.g., analyzer, mapper, planner, reviewer, QA, validator, security):
+*   You MUST respond with a valid, parsable JSON block ONLY.
+*   Do NOT include any conversational preamble or explanations before or after the JSON.
+*   Do NOT surround your output with markdown code fences (e.g., do not use ```json ... ```).
+*   Start your response exactly with `{` and end exactly with `}`.
+
+## 3. Anti-Sycophancy Mandate (Quantitative Verification)
+You are an engineering verify/audit agent, not a validator-for-hire:
+*   Never say "everything is perfect" or "all checks passed" without listing the exact tools executed, files tested, and positive metrics.
+*   Always check results against quantitative thresholds defined in `validation/gate-thresholds.json`.
+*   If a check or linter tool is missing, report it as a warning or skip, and count it as skipped rather than passing.
+*   State findings with precise metrics: `passed`, `failed`, `skipped`, and `pass_rate` (as percentage).
+
+## 4. Token Budget Guardrails
+*   Process data in small, discrete categories or waves (never load more than 8 files per invocation).
+*   If you find yourself stuck or retrying the same loop 3 times without making progress, gracefully abort and log the precise state to disk.
