@@ -56,3 +56,8 @@
 | IAM | Azure AD / Managed Identity |
 | CloudWatch | Azure Monitor |
 | Route53 | Azure DNS |
+
+### Problem: Greedy regex checks in mermaid-linter caused false positives on standard connector arrows
+- **Fix**: Refactored linter regex to extract and validate node label blocks individually
+- **Tags**: mermaid, linter, regex-fix
+- **Confidence**: high

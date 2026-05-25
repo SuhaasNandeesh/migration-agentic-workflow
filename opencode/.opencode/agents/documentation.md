@@ -66,10 +66,22 @@ One ADR per non-obvious decision:
 - Known risks during rollback
 
 ### 6. Change Summary (`docs/CHANGELOG.md`)
-- What was migrated
-- What was redesigned (and why)
-- What was retained as-is
-- Known limitations or deferred items
+A compiler-accurate and business-friendly log of all code changes:
+- Before compilation, you MUST autonomously generate a patch and run the AST resource delta analyzer:
+  ```bash
+  # 1. Generate Git diff patch against the main branch
+  git diff origin/main > output/artifacts/latest-diff.patch 2>/dev/null || git diff HEAD~1 > output/artifacts/latest-diff.patch || touch output/artifacts/latest-diff.patch
+  
+  # 2. Run AST Delta Analyzer tool
+  python3 validation/resource_delta_analyzer.py output/artifacts/latest-diff.patch output/artifacts/ast-summary.md
+  ```
+- Read the compiled summary from `output/artifacts/ast-summary.md` and embed the output directly as a structured section within `docs/CHANGELOG.md`.
+- Include standard commentary detailing:
+  - What was migrated
+  - What was redesigned (and why)
+  - What was retained as-is
+  - Known limitations or deferred items
+
 
 ### 7. Per-Service README
 For each migrated service/module, generate a README with:

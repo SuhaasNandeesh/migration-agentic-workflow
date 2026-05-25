@@ -173,8 +173,10 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 
 ### Write Output To Disk
 - Write your FULL structured output to: `output/artifacts/generated-files.json`
+  - **IMPORTANT (Cumulative Manifest Mode):** You must first read `output/artifacts/generated-files.json` if it already exists, and **append** all newly generated files to the existing `artifacts` list. Do NOT overwrite the existing entries from previous category runs. This preserves a comprehensive, cumulative manifest of all generated files across all waves.
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Completed. Generated 24 files across 6 modules. Full output: output/artifacts/generated-files.json"
+
 
 ## Output Schema
 ```json

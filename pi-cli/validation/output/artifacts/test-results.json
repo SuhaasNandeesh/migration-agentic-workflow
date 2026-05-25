@@ -18,7 +18,7 @@
         {
           "test": "terraform test (offline mocks)",
           "status": "pass",
-          "output": "validation.tftest.hcl... \u001b[37min progress\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[37mtearing down\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[31mfail\u001b[0m\u001b[0m\n\u001b[31m\u2577\u001b[0m\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[1m\u001b[31mError: \u001b[0m\u001b[0m\u001b[1munknown provider registry.terraform.io/hashicorp/aws\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[0m\n\u001b[31m\u2575\u001b[0m\u001b[0m\n\n\u001b[31mFailure!\u001b[0m\u001b[0m 0 passed, 0 failed."
+          "output": "validation.tftest.hcl... \u001b[37min progress\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[37mtearing down\u001b[0m\n\u001b[0mvalidation.tftest.hcl... \u001b[31mfail\u001b[0m\u001b[0m\n\u001b[31m\u2577\u001b[0m\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[1m\u001b[31mError: \u001b[0m\u001b[0m\u001b[1munknown provider registry.terraform.io/hashicorp/google\u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\n\u001b[31m\u2502\u001b[0m \u001b[0m\u001b[0m\n\u001b[31m\u2575\u001b[0m\u001b[0m\n\n\u001b[31mFailure!\u001b[0m\u001b[0m 0 passed, 0 failed."
         }
       ]
     }

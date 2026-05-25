@@ -52,11 +52,11 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 
 ### Process (Strict Ordering)
 
-1. Read `migration-mapping/mapping.json`.
-2. Read `output/source_analysis.json`.
+1. Read `output/artifacts/migration-mapping.json`.
+2. Read `output/artifacts/source-inventory.json`.
 3. **CROSS-FACTORY INTELLIGENCE:** Check if `DocumentationFactory/output/artifacts/global-data-dictionary.json` exists. If it does, read it. Use this pre-computed matrix to automatically map all source secrets and environment variables to the target infrastructure (e.g., mapping to Azure KeyVault). If the file does not exist, proceed normally without it.
 4. Compare source modules against target best practices (refer to `validation/references/architecture_standards.md` if available).
-5. Generate an ordered execution plan (`output/migration_execution_plan.json`).
+5. Generate an ordered execution plan (`output/artifacts/execution-plan.json`).
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Completed. Created 4-wave plan with 6 tasks. Full output: output/artifacts/execution-plan.json"
 
@@ -152,3 +152,4 @@ Before returning, verify:
 2. All files from `source-inventory.json` are assigned to at least one task
 3. No file appears in multiple categories (no duplicates)
 4. Dependencies between categories are correctly reflected in wave ordering
+5. **Exact Category Accounting:** Verify that the value of `total_categories` in the output JSON matches the mathematically exact sum of all categories across ALL waves (including non-IaC waves like Wave 6 Operational Tooling). Every single category in every wave must be counted in `total_categories`.

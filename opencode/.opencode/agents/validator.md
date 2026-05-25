@@ -73,7 +73,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 ### 2. Execution Validation
 
 **For Terraform:**
-- Run `tool-executor/scripts/terraform_executor.sh`
+- Run `validation/run-mock-tests.sh`
 - Capture and parse output
 - Fail if exit code != 0
 
@@ -100,9 +100,11 @@ For each artifact, automatically:
 | Pipelines | build stage, test stage, security scan stage, artifact stage |
 | Terraform | fmt pass, validate pass, plan pass |
 
-### 4. Completeness Validation
-- Ensure all files referenced in the plan exist
-- Ensure all dependencies are satisfied
+### 4. Completeness Validation & File Census Auditing
+- Ensure all files referenced in the plan exist on disk.
+- Ensure all dependencies are satisfied.
+- **Quantitative File-Census Audit (Zero Files Left Behind):** Compare the baseline pre-scan `output/artifacts/file-list.txt` (the ground truth census) against `output/artifacts/generated-files.json` (the cumulative target manifest). For every file listed in the source baseline census, there MUST be a corresponding target file generated, or the category task MUST be explicitly marked as `retained` or `deprecated` in the plan. Any completely missing files or ignored directories (such as missing `scripts/`, `.github/`, or `tools/` folders) MUST trigger a **FAIL** status with a list of the omitted files, instructing the supervisor to re-run the developer on the missing categories.
+
 
 ## Output Rules
 - MUST list all violations explicitly with file path and standard reference

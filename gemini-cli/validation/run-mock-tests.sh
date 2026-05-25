@@ -40,18 +40,23 @@ EOF
   exit 0
 fi
 
+# Resolve path to migration-config.json relative to the script directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_PATH="migration-config.json"
+if [ ! -f "${CONFIG_PATH}" ]; then
+  CONFIG_PATH="../migration-config.json"
+fi
+if [ ! -f "${CONFIG_PATH}" ]; then
+  CONFIG_PATH="${SCRIPT_DIR}/../migration-config.json"
+fi
+
 # Generate mock test suite dynamically using dynamic variables extracted from config
-python3 -c '
+CONFIG_PATH="${CONFIG_PATH}" python3 -c '
 import json
 import sys
 import os
 
-config_path = "migration-config.json"
-if not os.path.exists(config_path):
-    config_path = "../migration-config.json"
-if not os.path.exists(config_path):
-    config_path = "/Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/migration-config.json"
-
+config_path = os.environ.get("CONFIG_PATH", "migration-config.json")
 try:
     with open(config_path, "r") as f:
         conf = json.load(f)

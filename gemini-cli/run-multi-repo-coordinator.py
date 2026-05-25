@@ -104,6 +104,12 @@ def run_repo_migration(repo_conf, global_config):
 
     # 1. Establish workspace directories
     os.makedirs(target_dir, exist_ok=True)
+    # Pre-create output and target subdirectories to prevent agent tool/write aborts
+    os.makedirs(os.path.join(target_dir, "output", "artifacts"), exist_ok=True)
+    os.makedirs(os.path.join(target_dir, "output", "target"), exist_ok=True)
+    # Pre-create DocumentationFactory subdirectories to prevent doc agent tool/write aborts
+    os.makedirs(os.path.join(target_dir, "DocumentationFactory", "output", "artifacts"), exist_ok=True)
+    os.makedirs(os.path.join(target_dir, "DocumentationFactory", "output", "docs"), exist_ok=True)
 
     # 2. Replicate the private orchestration framework into the target repo
     target_agents_root = os.path.join(target_dir, ORCHESTRATION_NAME)

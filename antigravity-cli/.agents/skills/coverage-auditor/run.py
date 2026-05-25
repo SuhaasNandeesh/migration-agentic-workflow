@@ -1,6 +1,7 @@
 import json
 import argparse
 import sys
+import os
 
 def audit_coverage(dependency_file, specs_file, flows_file):
     try:
@@ -38,15 +39,38 @@ def audit_coverage(dependency_file, specs_file, flows_file):
         
         print(f"Coverage: {coverage_percent:.2f}%")
         
-        # 95% Threshold Check
-        if coverage_percent < 95.0:
-            print("STATUS: FAIL - Coverage below 95% threshold.")
+        # Load Threshold from gate-thresholds.json dynamically
+        threshold = 95.0
+        try:
+            # Check several possible path layers relative to dependency_file or current working dir
+            possible_paths = [
+                os.path.abspath(os.path.join(os.path.dirname(dependency_file), "..", "..", "..", "validation", "gate-thresholds.json")),
+                os.path.abspath(os.path.join(os.path.dirname(dependency_file), "..", "..", "validation", "gate-thresholds.json")),
+                os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "validation", "gate-thresholds.json")),
+                os.path.abspath(os.path.join(os.getcwd(), "validation", "gate-thresholds.json")),
+                os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "validation", "gate-thresholds.json"))
+            ]
+            for p in possible_paths:
+                if os.path.exists(p):
+                    with open(p, 'r') as tf:
+                        tdata = json.load(tf)
+                        val = tdata.get("completeness", {}).get("thresholds", {}).get("min_file_coverage_percent")
+                        if val is not None:
+                            threshold = float(val)
+                            print(f"Loaded dynamic completeness threshold: {threshold}%")
+                            break
+        except Exception as te:
+            print(f"Warning: Could not load gate-thresholds.json: {str(te)}. Falling back to default {threshold}% threshold.")
+        
+        # Dynamic Threshold Check
+        if coverage_percent < threshold:
+            print(f"STATUS: FAIL - Coverage below {threshold}% threshold.")
             print("Missing files that must be documented:")
             for m in missing_files:
                 print(f" - {m}")
             sys.exit(1)
         else:
-            print("STATUS: PASS - Coverage meets or exceeds 95% threshold.")
+            print(f"STATUS: PASS - Coverage meets or exceeds {threshold}% threshold.")
             if missing_files:
                 print("Note: The following files were skipped but are within threshold allowance:")
                 for m in missing_files:

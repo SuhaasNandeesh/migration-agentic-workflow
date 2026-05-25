@@ -41,3 +41,17 @@ Return ONLY a PASS/FAIL string and the path to the JSON.
   "fix_suggestion": "The spec states the DB uses port 3306, but the docker-compose.yaml explicitly maps to port 5432. Fix the port reference."
 }
 ```
+
+## Robust Python Verification Guidelines
+*   If you write or run inline Python scripts to verify, deduplicate, or count values in files (e.g. `files_covered` in `.md` or `.json` files), you MUST NOT assume the content is always perfectly formatted JSON.
+*   **NEVER call `json.loads` directly on a raw regex bracket match.** Standard markdown links or brackets can easily cause `JSONDecodeError: Extra data` or missing closing bracket syntax crashes.
+*   Always use a robust manual string extraction fallback in your Python loops. E.g.:
+    ```python
+    import re
+    # Extract contents between outermost brackets
+    match = re.search(r'\[([^\]]*)\]', bracketed_text)
+    if match:
+        # Find all quoted/ticked elements safely
+        items = re.findall(r'["\'`]([^"\'`]+)["\'`]', match.group(1))
+    ```
+

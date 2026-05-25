@@ -221,9 +221,14 @@ cd output/ && git init && git add -A && git commit -m "baseline: pre-migration"
 The planner produces `execution-plan.json` with category-ordered waves.
 You MUST process **one category at a time within each wave**.
 
+### Rules for Category Traversal:
+- **Dynamic Category Traversal:** The supervisor must dynamically read the actual elements inside the `"categories"` list array for each wave from `execution-plan.json`. Do NOT guess the category names, and do NOT assume a wave has only 1 category. Execute every category in the plan.
+- **Accurate State Initialization:** When initializing `pipeline-state.json` at startup, the supervisor must populate the `"waves"` and `"categories"` structures by directly mirroring the actual structure of `execution-plan.json`'s `"waves"` and `"categories"` arrays.
+
 ### Wave Execution Logic
 ```
 For each wave in execution-plan.json:
+
   Log: "Starting Wave {N}: {wave_name}"
   
   For each category in wave.categories:
@@ -304,19 +309,18 @@ When a gate (code-reviewer, qa-tester, validator, security) FAILS:
 ### Retry Decision Tree
 ```
 Gate FAILS with error details →
-  1. Extract: file_path, line, issue, fix_suggestion from gate output
-  2. Is this a single-file fix? (missing rule, hardcoded value, format error)
-     → YES: Invoke surgical-fix with ONLY the error details + file path
-     → NO (requires new resources, restructuring): Invoke developer for this category only
-  3. After fix: run `git diff` to capture patch
-  4. Re-invoke the failed gate in RETRY MODE:
-     - Pass: retry-manifest.json path + git diff output
+  1. Complete Security Remediation Rule: If the security gate fails, the Supervisor must NOT filter or prioritize only Critical/High issues. It MUST extract ALL Critical, High, and Medium findings (and any Low findings residing in the same target files) from security-results.json and package them into the error_details and files_to_fix passed to the surgical-fix agent. This guarantees that the fixer attempts to remediate all security findings in a single pass.
+  2. Pre-Existing Error Escalation Rule: If surgical-fix returns an escalation code (ESCALATE_TO_DEVELOPER) or reports that pre-existing/deprecated module errors cannot be surgically resolved, the Supervisor must NOT proceed to subsequent validation gates (such as security or cost-estimator). It must immediately halt downstream validation and invoke the developer agent for the affected categories to completely refactor and modernize the deprecated code.
+  3. Extract Path & File: Extract the exact: file_path, line, issue, and fix_suggestion from the gate output file.
+  4. Determine Fix Type: Is this a single-file fix or a standard configuration repair?
+     → YES: Invoke surgical-fix with ONLY the error details + file path.
+     → NO (requires complex restructuring, new resources, or architectural changes): Skip surgical-fix and immediately invoke developer for this category only.
+  5. Capture Patch: After the fixer completes, run git diff to capture the patch diff file.
+  6. Re-Invoke failed gate in RETRY MODE:
+     - Pass the retry-manifest.json path + git diff patch output.
      - Gate reads ONLY modified files (not all files)
-  5. If retry fails again (attempt 2):
-     → Try surgical-fix with SIMPLIFIED prompt (progressive simplification)
-  6. If retry fails again (attempt 3):
-     → Escalate to full developer for this category
-     → If developer also fails → STOP, log failure
+  7. Compacted Simplification (Attempt 2): If retry fails again, try surgical-fix with a simplified/compacted prompt to prevent model overthinking.
+  8. Developer Escalation (Attempt 3): If it fails a third time, escalate to the developer agent for a full category sweep. If that also fails, STOP and log the failure.
 ```
 
 ### Graduated Retry Simplification

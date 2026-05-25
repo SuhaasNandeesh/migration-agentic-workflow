@@ -172,6 +172,8 @@ You are a **TESTER**, not a validator-for-hire. Your job is to BREAK things.
 ## Rules
 - ALWAYS attempt real tool execution — do not simulate results
 - If a tool is not installed, log it as "skipped" with tool name in `tools_not_found`
+- **Homebrew Package Installation Rule:** If attempting to install missing validation packages on macOS (like `tflint`), you MUST use the standard official Homebrew tap package name: `brew install terraform-linters/tap/tflint` (do NOT use the old/deprecated tap formula `terraform-linters/tflint/tflint` which fails with repo not found).
+- **Terraform Directory Option / Chdir Rule:** Terraform commands (e.g. `init`, `validate`, `plan`, `test`) do NOT accept a directory path as a direct trailing argument (e.g. running `terraform init <path>` is invalid and fails with "Too many command line arguments"). When validating a specific target module or directory path, you MUST change directory first or use the global `-chdir=<path>` flag (e.g., run `terraform -chdir=<path> init -backend=false` or `cd <path> && terraform init -backend=false`).
 - Every failure must include the exact error output from the tool
 - Every failure must include a `fix_hint` for the developer
 - Syntax failures are always CRITICAL — they block the pipeline

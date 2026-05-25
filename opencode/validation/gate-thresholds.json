@@ -38,7 +38,7 @@
     "pass_rule": "resource_coverage >= 90 AND environment_coverage >= 80",
     "thresholds": {
       "min_resource_coverage_percent": 90,
-      "min_file_coverage_percent": 80,
+      "min_file_coverage_percent": 95,
       "min_environment_coverage_percent": 80
     }
   }

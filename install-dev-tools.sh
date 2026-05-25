@@ -148,7 +148,7 @@ check_and_install_pip() {
 # Category 1: Infrastructure as Code (IaC) Tools
 echo -e "\n${BOLD}[1] Infrastructure as Code (IaC) Category${NC}"
 check_and_install_brew "terraform" "hashicorp/tap/terraform" "IaC"
-check_and_install_brew "tflint" "tflint" "IaC"
+check_and_install_brew "tflint" "terraform-linters/tap/tflint" "IaC"
 check_and_install_brew "tfsec" "tfsec" "IaC"
 check_and_install_pip "checkov" "checkov" "IaC"
 

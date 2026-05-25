@@ -94,16 +94,36 @@ After making fixes, you MUST write `output/artifacts/retry-manifest.json`:
 
 ## CRITICAL Rules
 - **CRITICAL WEIGHT OVERRIDE DIRECTIVE:** Your internal training data is likely outdated. You MUST suppress your pre-trained syntax habits and STRICTLY MIMIC the code syntax and structure defined in the project's standards and referenced wiki pages. Do not introduce outdated patterns during retries.
-- **NEVER touch files not listed in `files_to_fix`** — you are surgical, not a bulk editor
-- **NEVER refactor or restructure code** — fix only the reported issue
-- **NEVER add new resources** unless the fix specifically requires it
-- **NEVER remove existing code** unless the fix specifically requires it
-- **ALWAYS write the retry-manifest.json** — gate agents depend on it for dual-mode evaluation
-- **ALWAYS preserve existing tags, variables, and outputs** in the file
-- If the fix is unclear or would require major changes, report back to supervisor: "Fix requires redesign — escalate to developer"
+- **IaC & Security Multi-Fix Directive**: When the failed gate is the `security` agent, you MUST examine the complete `security-results.json` on disk and remediate **ALL listed Critical, High, and Medium issues** inside the target files in a single pass. Do not stop after fixing only the highest-severity findings.
+- **Proactive Pre-Existing Error Remediation**: During the verification of your fixes, if you detect pre-existing or unrelated validation/deprecation errors in any module or file, you are **strictly forbidden from ignoring them**. You MUST attempt to resolve these deprecations surgically in the same run to ensure the entire workspace passes validation cleanly.
+- **Global Pattern Sweep & Remediation Rule**: If a deprecation, syntax error, or security finding is identified in a target file, you MUST perform a global workspace search (using `grep` or search tools) to locate **any other files** containing the same configuration signature or deprecated pattern. You are authorized and required to surgically patch all matching occurrences in a single sweep, adding them to `files_modified` in the manifest to ensure complete workspace compliance.
+- **Surgical Escalation Rule**: If a pre-existing or security issue cannot be completed surgically because it requires complex resource restructuring or architectural changes (such as provisioning an entirely new sub-module or database tier), you must NOT return a successful retry. You must write out the details of the blockages and return the exact code: `ESCALATE_TO_DEVELOPER` to trigger a developer refactoring cycle.
+- **NEVER refactor or restructure code** unless the fix specifically requires it.
+- **NEVER add new resources** unless the fix specifically requires it.
+- **NEVER remove existing code** unless the fix specifically requires it.
+- **ALWAYS write the retry-manifest.json** — gate agents depend on it for dual-mode evaluation.
+- **ALWAYS preserve existing tags, variables, and outputs** in the file.
+
+---
+
+## Generalized Azure RM Modernization Matrix
+To enable proactive self-healing of deprecated patterns across the entire codebase, consult this modernization lookup reference:
+
+| Resource Type | Deprecated Pattern / Field | Remediation / Modernized Pattern |
+| :--- | :--- | :--- |
+| `azurerm_storage_account` | `allow_blob_public_access = ...` | Replace with `allow_nested_items_to_be_public = ...` (same boolean value). |
+| `azurerm_storage_account` | `enable_https_traffic_only = ...` | Enforced as `true` by default; safe to remove parameter or set to `true`. |
+| `azurerm_kubernetes_cluster` | `client_secret` (inside `service_principal`) | Modernize to Workload Identity (`oidc_issuer_enabled = true`, `workload_identity_enabled = true`). |
+| `azurerm_kubernetes_cluster` | `enable_pod_security_policy = ...` | Deprecated parameter; remove the parameter block entirely (rely on Azure Policy/Gatekeeper). |
+| `azurerm_key_vault` | `soft_delete_enabled = ...` | Soft delete is always-on; remove this parameter to avoid validation warnings/errors. |
+| `azurerm_virtual_network` | `dns_servers = [...]` (inline attribute) | Replace with standalone `azurerm_virtual_network_dns_servers` resource to prevent circular state locks. |
+| `azurerm_postgresql_server` | `azurerm_postgresql_server` (entire resource) | Replace legacy single server with `azurerm_postgresql_flexible_server` module definition. |
+
+---
 
 ## Self-Verification
 After writing the fix, verify your own output:
-1. Run `terraform fmt -check` on the modified file if it's `.tf`
-2. Run `yamllint` on the modified file if it's `.yaml`
-3. If verification fails, fix the format issue before returning
+1. Run `terraform fmt -check` on the modified file if it's `.tf`.
+2. Run `yamllint` on the modified file if it's `.yaml`.
+3. If verification fails, fix the format issue before returning.
+4. If `terraform validate` detects pre-existing/deprecation errors anywhere in the workspace, apply the **Proactive Pre-Existing Error Remediation** or trigger the **Surgical Escalation Rule**.
