@@ -12,7 +12,7 @@ description: "Scans and inventories any source codebase to discover all resource
    python3 .pi/skills/dep-graph-builder/run.py --source <source_path> --output output/source_analysis.json
    ```
 3. If the script fails, fall back to native tools (`glob`, `grep_search`) to manually build the `source_analysis.json`.
-4. Validate completeness against `validation/references/source_discovery.json` (if exists).
+4. Proactively check if `validation/references/source_discovery.json` exists on disk before attempting to read it. If it exists, validate completeness against it; if it is missing, bypass this check gracefully and proceed immediately.
 5. Document what was found in `output/source_analysis.json`. Your purpose is to **discover and inventory everything** in a source codebase that needs migration. You do not assume what exists — you scan and report what you find.
 
 ## Autonomous Execution
