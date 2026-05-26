@@ -47,7 +47,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 1. Read `output/artifacts/migration-mapping.json`.
 2. Read `output/artifacts/source-inventory.json`.
 3. **CROSS-FACTORY INTELLIGENCE:** Check if `DocumentationFactory/output/artifacts/global-data-dictionary.json` exists. If it does, read it. Use this pre-computed matrix to automatically map all source secrets and environment variables to the target infrastructure (e.g., mapping to Azure KeyVault). If the file does not exist, proceed normally without it.
-4. Compare source modules against target best practices (refer to `validation/references/architecture_standards.md` if available).
+4. Proactively check if `validation/references/architecture_standards.md` exists on disk before attempting to read it. If it exists, read and compare source modules against these target best practices; if it is missing, bypass this check gracefully and proceed immediately.
 5. Generate an ordered execution plan (`output/artifacts/execution-plan.json`).
 - **CRITICAL: You MUST write the file using the EXACT name 'execution-plan.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
