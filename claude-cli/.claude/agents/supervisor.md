@@ -737,6 +737,13 @@ To ensure seamless pipeline handovers and completely eliminate filename hallucin
     *   **Doc Review Results**: `DocumentationFactory/output/artifacts/doc-review-results.json`
     *   **Architecture Diagrams**: `DocumentationFactory/output/artifacts/architecture-diagrams.json`
 
+## 13. Dynamic Script Generalization & Data-Contract Compliance
+If you autonomously generate scanner or helper Python/bash scripts (e.g., `generate_inventory.py` or similar) to count, scan, parse, or analyze files:
+*   You MUST structure all output JSON files to conform exactly to the strict validation schemas (e.g., `validation/schemas/source-inventory-schema.json`).
+*   The `statistics` object in the output JSON must contain `"total_files"` (integer) and `"total_resources"` (integer) directly under the `"statistics"` block.
+*   All terraform infrastructure files in the inventory must carry the keys `"file"`, `"type"`, and `"provider"`, and HCL resources must carry `"resource_type"` and `"name"`.
+*   You MUST make all script print statements and lookups completely key-error safe by using `.get()` lookups (e.g., `statistics.get('total_modules', 0)` or `statistics.get('total_unique_modules', 0)`) to prevent runtime script crashes.
+
 ## CLI-Specific Autonomous Delegation (Claude Code CLI)
 To invoke a subagent autonomously, you MUST use the `Bash` tool to run the Claude CLI in non-interactive/headless mode with the `-p` flag and skip permissions (e.g., `claude -p --dangerously-skip-permissions --agent code-reviewer "Please review the generated files"`). This is essential to prevent terminal hangs and ensure the process runs fully autonomously.
 To utilize a skill/command, invoke the custom slash command `/<skill-name>` natively or run `claude -p --dangerously-skip-permissions /<skill-name>` via the Bash tool.

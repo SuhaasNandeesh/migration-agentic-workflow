@@ -221,3 +221,10 @@ To ensure seamless pipeline handovers and completely eliminate filename hallucin
     *   **Global Data Dictionary**: `DocumentationFactory/output/artifacts/global-data-dictionary.json`
     *   **Doc Review Results**: `DocumentationFactory/output/artifacts/doc-review-results.json`
     *   **Architecture Diagrams**: `DocumentationFactory/output/artifacts/architecture-diagrams.json`
+
+## 13. Dynamic Script Generalization & Data-Contract Compliance
+If you autonomously generate scanner or helper Python/bash scripts (e.g., `generate_inventory.py` or similar) to count, scan, parse, or analyze files:
+*   You MUST structure all output JSON files to conform exactly to the strict validation schemas (e.g., `validation/schemas/source-inventory-schema.json`).
+*   The `statistics` object in the output JSON must contain `"total_files"` (integer) and `"total_resources"` (integer) directly under the `"statistics"` block.
+*   All terraform infrastructure files in the inventory must carry the keys `"file"`, `"type"`, and `"provider"`, and HCL resources must carry `"resource_type"` and `"name"`.
+*   You MUST make all script print statements and lookups completely key-error safe by using `.get()` lookups (e.g., `statistics.get('total_modules', 0)` or `statistics.get('total_unique_modules', 0)`) to prevent runtime script crashes.
