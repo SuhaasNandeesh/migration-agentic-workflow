@@ -86,6 +86,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 
 ### Write Output To Disk
 - Write your FULL structured output to: `output/artifacts/source-inventory.json`
+**CRITICAL: You MUST write the file using the EXACT name 'source-inventory.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Your output MUST conform to the schema in: `validation/schemas/source-inventory-schema.json`
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Completed. Found 47 resources across 6 modules, 5 categories. Full output: output/artifacts/source-inventory.json"

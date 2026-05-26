@@ -84,6 +84,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 
 ### Write Output To Disk
 - Write your FULL structured output to: `output/artifacts/source-inventory.json`
+**CRITICAL: You MUST write the file using the EXACT name 'source-inventory.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Your output MUST conform to the schema in: `validation/schemas/source-inventory-schema.json`
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Completed. Found 47 resources across 6 modules, 5 categories. Full output: output/artifacts/source-inventory.json"
@@ -222,17 +223,42 @@ You are an engineering verify/audit agent, not a validator-for-hire:
 *   Terraform commands (e.g., `init`, `validate`, `plan`, `test`) do NOT accept a directory path as a direct trailing argument. You are strictly forbidden from running `terraform init <path>` or `terraform validate <path>`. Instead, you MUST use the global `-chdir=<path>` flag (e.g., `terraform -chdir=<path> init -backend=false`) or change the directory first (e.g., `cd <path> && terraform init -backend=false`) to ensure successful execution.
 
 ## 7. Graceful Optional File Reading Rule (No Blind Reads)
-*   Optional structural files (e.g., `locals.tf`, `outputs.tf`, `versions.tf` in Terraform modules, or secondary yaml/config files) are NOT guaranteed to exist in every directory. You are strictly forbidden from assuming optional files exist and attempting to read them directly without verification. You MUST always verify that a file exists (via listing tools, globs, or checking your file manifests) before attempting to call a read tool on it. If the file is not present, you must handle its absence gracefully and proceed with your analysis using the available files.
+*   **NO file is guaranteed to exist in a directory.** Standard files (such as `main.tf`, `variables.tf`, `outputs.tf`, `locals.tf`, `versions.tf` in Terraform modules, or configuration files in other languages) are NOT guaranteed to be present.
+*   You are strictly forbidden from assuming any file exists and attempting to read it blindly without prior verification.
+*   You MUST always verify a file's existence (via listing tools like `list_dir`, file search/census manifests, or glob/find commands) before calling a read tool on it. If a file is not present, you must handle its absence gracefully and proceed with only the files physically present (e.g. read `vpc.tf` if `main.tf` is missing).
 
 ## 8. No System-Level `/tmp` Rule (Sandbox Preservation)
 *   You are strictly forbidden from writing to, reading from, or running commands inside system-level temporary directories (such as `/tmp/`, `/var/tmp/`, `/home/`, or any other path outside the workspace). The platform runs in a strictly locked-down secure sandbox container, and any access outside the workspace boundaries will fail or trigger manual security approval halts that stall execution. If temporary scratchpads, files, diff patches, or configuration overrides are required, you MUST create and use a subdirectory *within the workspace* (e.g. `output/artifacts/tmp/`) and perform all operations there.
 
 ## 9. Relative Path Resolution Protocol (Workspace Renames/Moves)
-*   **Do NOT hardcode absolute paths** (e.g., `/Users/suhaasnandeesh/...`) in your conversational context, instructions, or generated outputs.
-*   Always use relative paths relative to the workspace root (e.g., `DocumentationFactory/output/artifacts/...`).
+*   **Do NOT hardcode absolute paths** (e.g., `/Users/username/...`) in your conversational context, instructions, generated outputs, or tool calls.
+*   **You MUST pass relative paths to all file-reading and file-writing tools** (e.g., `DocumentationFactory/output/docs/...` instead of `/Users/username/...`).
+*   Using absolute paths is strictly prohibited. Any spelling variations or typos in home directory paths (such as using `/Users/suhahaasnandeesh/` instead of `/Users/username/`) will cause the secure sandbox to classify the path as an unauthorized external directory, triggering blocking manual permission prompts that stall the autonomous pipeline.
 *   If you need to execute commands or read files, resolve them dynamically relative to the current working directory or current workspace root.
 *   If you read absolute paths from historical logs or cached JSON files (like `dependency-graph.json`) that refer to a different checkout directory or renamed folder, you MUST dynamically replace the old directory prefix with your current workspace root path before attempting to access them.
 
 ## 10. Strict Tool Spelling Rule
 *   You MUST use the exact tool names defined by the platform environment.
 *   When performing wildcard file searches, the tool is strictly named **`glob`**. Do NOT call the tool **`globe`** (with an 'e') — that is a spelling error/hallucination and will cause an execution failure.
+
+## 11. Just-in-Time Context Hydration Protocol (AST Code Folding)
+To prevent context window bloat and reasoning degradation on massive files (>= 1,000 lines of code):
+*   **Do NOT read large files raw into context.** If a source file is >= 1,000 lines, you MUST first run the `ast-stubber` skill to generate a lightweight structural stub:
+    `python3 .agents/skills/ast-stubber/run.py --file <file_path> --stub --output output/artifacts/stubs/<relative_file_path>`
+    Then, read only the lightweight structural stub using your file-viewing tools to map out class, function, or resource signatures.
+*   **JIT Hydration Before Editing:** You are strictly forbidden from writing code or modifying blocks based on stub placeholders. If you need to read or edit logic inside a folded block (e.g. `// ... [Folded Block: aws_instance.web]`), you MUST first run `ast-stubber` in hydration mode to extract the exact, 100% accurate raw code snippet:
+    `python3 .agents/skills/ast-stubber/run.py --file <file_path> --hydrate --block-name <symbol_or_block_name>`
+    or:
+    `python3 .agents/skills/ast-stubber/run.py --file <file_path> --hydrate --line-range <start>-<end>`
+*   This JIT expansion guarantees that your edits are always generated against raw, accurate source code while maintaining a scale-invariant memory context.
+
+## 12. Canonical Intermediate Artifact Filenames (Zero Mismatches)
+To ensure seamless pipeline handovers and completely eliminate filename hallucinations across agents:
+*   You MUST write to and read from the EXACT canonical filenames specified below. You are strictly forbidden from using any variations (e.g., never use `doc-plan.json`, `discovery-scan.json`, or `doc-planner.json`):
+    *   **Dependency Graph**: `DocumentationFactory/output/artifacts/dependency-graph.json` (NEVER write to or read from `discovery-scan.json` or `discovery-scanner-report.json`)
+    *   **Wave Execution Plan**: `DocumentationFactory/output/artifacts/doc-execution-plan.json` (NEVER write to or read from `doc-plan.json` or `doc-planner.json` or `execution-plan.json`)
+    *   **Infrastructure Specifications**: `DocumentationFactory/output/artifacts/infrastructure-specs.json`
+    *   **Control Flow Specifications**: `DocumentationFactory/output/artifacts/pipeline-flows.json`
+    *   **Global Data Dictionary**: `DocumentationFactory/output/artifacts/global-data-dictionary.json`
+    *   **Doc Review Results**: `DocumentationFactory/output/artifacts/doc-review-results.json`
+    *   **Architecture Diagrams**: `DocumentationFactory/output/artifacts/architecture-diagrams.json`

@@ -86,6 +86,7 @@ Flag these as `CRITICAL`:
 
 ### Write Output To Disk
 - Write your FULL structured output to: `output/artifacts/cost-estimate.json`
+**CRITICAL: You MUST write the file using the EXACT name 'cost-estimate.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Return ONLY a 1-2 line summary to the supervisor
 - Example: "Estimated monthly cost: $2,340 (source was ~$2,100). 2 anomalies flagged. Full: output/artifacts/cost-estimate.json"
 

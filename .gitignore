@@ -125,3 +125,13 @@ debug/
 # Local configuration overrides (if any)
 local-config.json
 *.local.json
+
+# Generated Outputs & Runs
+**/output/
+**/temp_test_run/
+**/test-results.json
+**/validation-report.json
+
+# Generated target workspaces
+**/path/to/azure-*/
+

@@ -189,8 +189,8 @@ resource "azurerm_resource_group" "rg" {
 
     # Run the test runner script using bash
     # First, let's copy migration-config.json into a place where the script can find it
-    # The script looks at: migration-config.json, ../migration-config.json, or /Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/migration-config.json
-    # It will find it at /Users/suhaasnandeesh/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/migration-config.json automatically
+    # The script looks at: migration-config.json, ../migration-config.json, or /Users/username/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/migration-config.json
+    # It will find it at /Users/username/Code/mygit/oc-cli-agentic-workflow/migration-agentic-workflow/opencode/migration-config.json automatically
     
     cmd = ["bash", runner_script, mock_tf_dir]
     

@@ -45,6 +45,7 @@ For EACH step, you MUST:
 2. Invoke the subagent by name, passing it the task and any output from previous steps
 3. Receive the subagent's result
 4. Pass that result to the next subagent
+5. **STRICT SERIALIZATION (NO PARALLEL EXECUTION):** You are strictly forbidden from executing multiple subagents concurrently or invoking them in parallel. You MUST wait for the tool call of the current subagent to fully complete, return its output, and verify its file modifications on disk before initiating the next step. This is especially critical for finalization steps: you MUST verify that `shared-memory-writer` has finished extracting lessons and successfully written its entries to disk BEFORE calling `git-publisher` to commit and push the feature branch, ensuring no telemetry or knowledge is missed.
 
 ### Example Delegation Pattern
 ```

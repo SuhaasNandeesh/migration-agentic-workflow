@@ -44,6 +44,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 
 ### Write Output To Disk
 - Write your FULL structured output to: `output/artifacts/validation-results.json`
+**CRITICAL: You MUST write the file using the EXACT name 'validation-results.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Completed. Standards compliance: 95%. Full output: output/artifacts/validation-results.json"
 

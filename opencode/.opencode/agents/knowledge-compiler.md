@@ -183,5 +183,6 @@ last_updated: "<date>"
 
 ## Disk-Based I/O — MANDATORY
 - Write your FULL structured output to: `output/artifacts/knowledge-compilation.json`
+**CRITICAL: You MUST write the file using the EXACT name 'knowledge-compilation.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 - Return ONLY a 1-2 line summary to the supervisor (not the full data)
 - Example return: "Compiled 9 entity pages (3 enriched via MCP), 10 patterns, 6 gotchas. Full: output/artifacts/knowledge-compilation.json"

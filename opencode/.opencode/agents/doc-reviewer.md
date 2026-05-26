@@ -31,6 +31,7 @@ You are the Doc Reviewer. Your job is to aggressively audit the documentation ge
 
 ## Output
 Write your FULL structured output to: `DocumentationFactory/output/artifacts/doc-review-results.json`
+**CRITICAL: You MUST write the file using the EXACT name 'doc-review-results.json'. Do NOT use any other variation, as subsequent pipeline agents statically expect this filename and will fail if it is missing.**
 Return ONLY a PASS/FAIL string and the path to the JSON.
 
 ## Schema
