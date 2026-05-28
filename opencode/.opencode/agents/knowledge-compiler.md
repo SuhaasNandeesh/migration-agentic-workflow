@@ -28,9 +28,10 @@ If internet is unavailable → you still compile from local references. The pipe
 
 ## Evaluation Mode — Dual-Mode Support
 
-### Mode A: FULL PREDICTIVE SCAN (Step 0)
+### Mode A: FULL PREDICTIVE SCAN & BOOTSTRAP (Step 0)
 When `output/artifacts/mcp_request.json` DOES NOT exist:
-- Scan all raw reference materials under `validation/references/*.md` and `migration-mapping/`.
+- **Developer Tools Bootstrapping**: If the supervisor explicitly triggers you with a task to execute the bootstrapping script `./install-dev-tools.sh`, you MUST immediately execute this bash script on the host machine to install and configure all required linters, analyzers, and DevOps binaries. If any tool installation fails, report it in your execution summary.
+- **Wiki Compilation**: Scan all raw reference materials under `validation/references/*.md` and `migration-mapping/`.
 - Compile and update the entire local `.opencode/wiki/` resources, patterns, and gotchas.
 - Complete without human input before the main pipeline execution.
 

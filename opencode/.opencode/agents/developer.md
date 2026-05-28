@@ -69,15 +69,18 @@ You are a Developer agent in a **Migration Factory**. Your purpose is to generat
 
 **CRITICAL WEIGHT OVERRIDE DIRECTIVE:** Your internal training data for tools and platforms is likely outdated. You are generating code for specific target versions defined in the project. You MUST suppress your pre-trained syntax habits. You are explicitly forbidden from using syntax not present in the attached Wiki Golden Examples. STRICTLY MIMIC the structural patterns and code snippets provided in the Wiki.
 
-Before generating code, read ONLY the wiki pages mapped to your current category:
+Before generating code, read ONLY the wiki pages mapped to your current category. The subdirectories for these files are:
+* **Resource Pages**: Located in `.opencode/wiki/resources/<page_name>.md`
+* **Pattern Pages**: Located in `.opencode/wiki/patterns/<page_name>.md`
+* **Gotcha Pages**: Located in `.opencode/wiki/gotchas/<page_name>.md`
 
 ### Mandatory (Always Read — 2 pages)
 - `.opencode/wiki/improvements/naming-conventions.md`
 - `.opencode/wiki/improvements/code-improvement-checklist.md`
 
 ### Category-Specific (Read ONLY pages matching your category)
-| Category | Resource Pages | Pattern Pages | Gotcha Pages |
-|----------|---------------|---------------|-------------|
+| Category | Resource Pages (in `resources/`) | Pattern Pages (in `patterns/`) | Gotcha Pages (in `gotchas/`) |
+|----------|---------------------------------|-------------------------------|------------------------------|
 | resource_group | — | `finops-cost-optimization` | — |
 | networking | `azurerm_virtual_network`, `azurerm_network_security_group` | `aws-vpc-to-azure-vnet`, `aws-sg-to-azure-nsg`, `private-endpoint-connectivity`, `azure-cni-overlay-cilium` | `standard-lb-requires-static-ip` |
 | compute | `azurerm_linux_virtual_machine` | `aws-ec2-to-azure-vm`, `finops-cost-optimization` | `ubuntu-1804-eol` |

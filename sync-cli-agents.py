@@ -162,10 +162,42 @@ def clean_markdown(text):
 
 def process_agents():
     system_common_path = os.path.join(OPENCODE_DIR, "agents", "system_common.md")
-    system_common_body = ""
+    raw_system_common_len = 0
     if os.path.exists(system_common_path):
         with open(system_common_path, 'r') as f:
-            system_common_body = f.read()
+            raw_system_common_len = len(f.read())
+            
+    # Parse categorized rules from system_common.md
+    core_rules = []
+    devops_rules = []
+    ast_rules = []
+    
+    current_category = None
+    if os.path.exists(system_common_path):
+        with open(system_common_path, 'r') as f:
+            for line in f:
+                if line.startswith("## [CORE]"):
+                    current_category = "core"
+                    core_rules.append(line.replace("[CORE] ", ""))
+                elif line.startswith("## [DEVOPS]"):
+                    current_category = "devops"
+                    devops_rules.append(line.replace("[DEVOPS] ", ""))
+                elif line.startswith("## [AST]"):
+                    current_category = "ast"
+                    ast_rules.append(line.replace("[AST] ", ""))
+                elif line.startswith("## "):
+                    current_category = None
+                else:
+                    if current_category == "core":
+                        core_rules.append(line)
+                    elif current_category == "devops":
+                        devops_rules.append(line)
+                    elif current_category == "ast":
+                        ast_rules.append(line)
+                        
+    core_body = "".join(core_rules).strip()
+    devops_body = "".join(devops_rules).strip()
+    ast_body = "".join(ast_rules).strip()
 
     agent_files = glob.glob(os.path.join(OPENCODE_DIR, "agents", "*.md"))
     
@@ -185,10 +217,20 @@ def process_agents():
         raw_char_len = len(body)
         total_raw_chars += raw_char_len
         
-        # Combine stitched body
-        combined_body = body
-        if system_common_body:
-            combined_body += "\n\n## Global Shared Instructions\n" + system_common_body
+        # Combine stitched body using dynamic semantic guidelines selection
+        stitched_rules = []
+        if core_body:
+            stitched_rules.append("\n\n## Global Core Instructions\n" + core_body)
+            
+        devops_agents = ["developer", "qa-tester", "validator", "security", "cost-estimator", "knowledge-compiler", "planner"]
+        if name in devops_agents and devops_body:
+            stitched_rules.append("\n\n## Global DevOps & IaC Standards\n" + devops_body)
+            
+        ast_agents = ["developer", "code-reviewer", "surgical-fix", "spec-analyst", "flow-tracer"]
+        if name in ast_agents and ast_body:
+            stitched_rules.append("\n\n## Just-in-Time Context Hydration Standards (AST)\n" + ast_body)
+            
+        combined_body = body + "".join(stitched_rules)
             
         # Clean comments and compress whitespace
         combined_body = clean_markdown(combined_body)
@@ -269,9 +311,9 @@ def process_agents():
             f.write(antigravity_body)
             
     # Calculate and report prompt compilation savings
-    savings_chars = (total_raw_chars + (len(system_common_body) * processed_count)) - total_compiled_chars
+    savings_chars = (total_raw_chars + (raw_system_common_len * processed_count)) - total_compiled_chars
     print(f"Processed {processed_count} agents across all platforms.")
-    print(f"[TOKEN SAVINGS] Combined total characters before compile: {total_raw_chars + (len(system_common_body) * processed_count)}")
+    print(f"[TOKEN SAVINGS] Combined total characters before compile: {total_raw_chars + (raw_system_common_len * processed_count)}")
     print(f"[TOKEN SAVINGS] Stitched & Minified characters after compile: {total_compiled_chars}")
     print(f"[TOKEN SAVINGS] Dynamic prompt minification saved ~{savings_chars} characters (~{int(savings_chars / 4)} tokens) per platform run!")
 

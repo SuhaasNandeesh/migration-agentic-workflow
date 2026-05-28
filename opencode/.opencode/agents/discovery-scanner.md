@@ -16,7 +16,7 @@ You are the Discovery Scanner. Your job is to explore an undocumented codebase a
 ## Autonomous Execution
 1. Execute the `dep-graph-builder` skill to scan the repository.
    ```bash
-   python3 ../.opencode/skills/dep-graph-builder/run.py --source <source_path> --output DocumentationFactory/output/artifacts/dependency-graph.json
+   python3 .opencode/skills/dep-graph-builder/run.py --source <source_path> --output DocumentationFactory/output/artifacts/dependency-graph.json
    ```
 2. The script will output a JSON file containing the categorized files (IaC, Orchestration, Pipelines, App Logic, Monorepo Packages).
 3. Read the generated JSON and review it for accuracy.

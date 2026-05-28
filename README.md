@@ -8,19 +8,98 @@ This repository houses a unified, language-agnostic agentic framework designed t
 
 ---
 
-## 1. Local Synchronization Workflow
+## 1. First-Time Quick Start & Order of Invocation
 
-Anytime you add, modify, or delete an agent prompt (in `opencode/.opencode/agents/`), a skill script (in `opencode/.opencode/skills/`), or a wiki page (in `opencode/.opencode/wiki/`), you must run the synchronizer script to propagate the updates to the target CLI directories.
+To achieve **100% expected results** on your first run, follow this precise order of configuration and execution. 
 
-Run the sync script from the workspace root:
+```mermaid
+graph TD
+    A["1. Install Local Prerequisites<br>(install-dev-tools.sh)"] --> B["2. Expose API Keys / LM Studio<br>(GEMINI_API_KEY, ANTHROPIC_API_KEY)"]
+    B --> C["3. Edit Master Configuration<br>(opencode/migration-config.json)"]
+    C --> D["4. Sync CLI Environments<br>(sync-cli-agents.py)"]
+    D --> E["5. Coordinate Target Repos<br>(run-multi-repo-coordinator.py)"]
+    E --> F["6. Launch Target Agent in Checkout<br>(cd /path/to/target && antigravity)"]
+    F --> G["7. Run Post-Migration Verification<br>(Cross-Model Audit & AST Deltas)"]
+```
+
+### Step 1: Install Local Prerequisites
+Our autonomous agents bypass slow, expensive LLM token requests by executing syntax, structure, and DevSecOps checks locally. Run the interactive setup script to prepare your system:
+```bash
+./install-dev-tools.sh
+```
+This script validates or configures Homebrew and installs essential binaries (`terraform`, `checkov`, `tflint`, `kubeconform`, `actionlint`, `hadolint`, `shellcheck`, `gitleaks`, `trufflehog`, `detect-secrets`).
+
+### Step 2: Configure AI Model API Keys or Local Endpoints
+Expose your API keys in your active terminal shell, or launch your offline model in **LM Studio** (see Section 4 for offline setup):
+```bash
+# Cloud-based API keys
+export GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere..."
+export ANTHROPIC_API_KEY="sk-ant-apYourClaudeApiKeyHere..."
+
+# (Optional) Persist keys in your shell profile
+echo 'export GEMINI_API_KEY="your-gemini-key"' >> ~/.zshrc
+echo 'export ANTHROPIC_API_KEY="your-claude-key"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Step 3: Configure the Master Migration Parameters
+Before compiling target agents, customize your migration parameters in **`opencode/migration-config.json`**.
+* **`multi_repo_migration.repositories`**: You **MUST** update the `source_dir` and `target_dir` paths to point to the actual directories of your local codebases:
+  ```json
+  "repositories": [
+    {
+      "id": "repo-01-infra",
+      "source_dir": "/Users/username/Code/aws-infra-repo",
+      "target_dir": "/Users/username/Code/azure-infra-repo",
+      "environments": ["dev", "test", "prod"]
+    }
+  ]
+  ```
+* **`target_versions`**: Define precise compiler versions (e.g., Terraform `1.11.0`, azurerm provider `3.116.0`, Kubernetes `1.29.2`).
+* **`finops_standards` & `security_compliance`**: Adjust tags, cost centers, and private egress rules.
+
+> [!IMPORTANT]
+> If you are customizing local LLMs, MCP servers, or specific agent tools permissions, you can also modify the master system configuration at `opencode/opencode.json`.
+
+### Step 4: Run the Local Synchronization Script
+Compile, translate, and sync the master prompts to the CLI-specific folders:
 ```bash
 /usr/bin/python3 sync-cli-agents.py
 ```
 > [!NOTE]
 > If your environment suffers from virtual environment pathing conflicts or Conda codec errors (e.g., `ModuleNotFoundError: No module named 'encodings'`), bypass the local Python wrapper by calling the system binary directly: `/usr/bin/python3 sync-cli-agents.py` or `/usr/local/bin/python3 sync-cli-agents.py`.
 
-### Synchronizer Core Compilation Actions:
-1. **Directory Lifecycle Management**: Cleans and recreates target platform folders to prevent context drift and stale assets.
+### Step 5: Run the Multi-Repo Coordinator
+Prepare, isolate, and seed your target repositories:
+```bash
+/usr/bin/python3 opencode/run-multi-repo-coordinator.py
+```
+This orchestrator automatically establishes workspace boundaries, injects target-specific orchestrator directories (`.agents/`, `.claude/`, etc.), replicates validation libraries, adds `.gitignore` blocks to prevent target repository pollution, and seeds the company-wide learning base.
+
+### Step 6: Trigger the Migration Agent inside your Target Codebase
+Navigate directly to your target codebase root directory and launch your chosen agent:
+```bash
+# Navigate to the target checkout folder defined in your config
+cd /Users/username/Code/azure-infra-repo
+
+# Launch the Antigravity CLI (Recommended)
+antigravity
+
+# OR launch Claude Code CLI
+claude
+
+# OR launch Gemini CLI
+gemini
+```
+The injected **Supervisor** agent will boot up and execute the full DevOps wave-ordered migration loop autonomously without human intervention!
+
+---
+
+## 2. Master Sync Compiler Compilation Actions
+
+The `sync-cli-agents.py` script ensures that you maintain a single point of truth in `opencode` while deploying flawless configurations across distinct CLI engines:
+
+1. **Directory Lifecycle Management**: Cleans and recreates target platform folders (`.gemini/`, `.claude/`, `.pi/`, `.agents/`) to prevent context drift and stale assets.
 2. **Recursive Syncing**: Copies global directories (`DocumentationFactory`, `knowledge`, `migration-mapping`, `validation`, `migration-config.json`, and `run-multi-repo-coordinator.py`) recursively to target roots.
 3. **Dynamic Prompt Path Rewriting**: Automatically searches and translates custom paths inside agent instructions (e.g., rewriting `.opencode/skills/` and `.opencode/wiki/` to `.agents/skills/` or `.claude/wiki/`) so that the execution processes run flawlessly without referencing missing directories.
 4. **Bi-directional Model Context Protocol (MCP) Translation**: Parses the standard master config `opencode/opencode.json` (which uses a unified local MCP schema) and translates it to standard split `mcpServers` format for `.agents/mcp_config.json` and `.claude/mcp_config.json`.
@@ -28,9 +107,9 @@ Run the sync script from the workspace root:
 
 ---
 
-## 2. Deploying to a Production Codebase
+## 3. Production Codebase Directory Replication Guide
 
-To run the agentic workflow on your actual codebases, copy the specific folders and files generated by the synchronizer into the root of your target checkout repository.
+To run the agentic workflow on your actual codebases, copy the specific folders and files generated by the synchronizer into the root of your target checkout repository. (This replication step is performed **automatically** when you run the Multi-Repo Coordinator).
 
 ### For Antigravity CLI
 Copy the following items from the `antigravity-cli/` directory to your target codebase root:
@@ -69,7 +148,7 @@ claude
 ```
 
 > [!TIP]
-> **Primary vs. Secondary Agent Separation:**
+> **Primary vs. Secondary Agent Separation in Claude Code:**
 > To prevent terminal autocomplete clutter and avoid the 15-item truncation ceiling in Claude Code's `@` search, the synchronization script automatically structures custom agents into two tiers:
 > - **Primary Agents** (`supervisor.md`, `doc-supervisor.md`) are placed directly in `.claude/agents/` to remain easily discoverable in your top-level autocompletes and `/agents` command library.
 > - **Secondary/Subagents** (the other 29 specialized agents) are nested neatly in `.claude/agents/subagents/`.
@@ -117,31 +196,9 @@ pi
 
 ---
 
-## 3. Model Configuration & Key Setup
+## 4. Local Offline Execution via LM Studio
 
-### Cloud-Based AI Model Keys (Recommended)
-When utilizing cloud-based foundation models (e.g., Anthropic Claude 3.5 Sonnet, Google Gemini 3.5 Flash, or OpenAI GPT-4o), expose the corresponding API key as an environment variable in your terminal session before launching the CLI:
-
-```bash
-# For Google Gemini models (Antigravity and Gemini CLI)
-export GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere..."
-
-# For Anthropic Claude models (Claude Code CLI)
-export ANTHROPIC_API_KEY="sk-ant-apYourClaudeApiKeyHere..."
-
-# For OpenAI models (if utilized via compatibility layers)
-export OPENAI_API_KEY="sk-YourOpenaiApiKeyHere..."
-```
-
-To make these keys persist across all shell sessions, append them to your shell configuration profile (e.g., `~/.zshrc` on macOS):
-```bash
-echo 'export GEMINI_API_KEY="your-gemini-key-here"' >> ~/.zshrc
-echo 'export ANTHROPIC_API_KEY="your-anthropic-key-here"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-### Local Offline Execution via LM Studio
-For strict air-gapped environments or local development, the framework natively integrates with local AI models (such as `Qwen` or `Gemma 2/3/4`) running in **LM Studio**.
+For strict air-gapped environments or local development, the framework natively integrates with local AI models (such as `Qwen` or `Gemma`) running in **LM Studio**.
 
 To use offline models, the synchronizer maps `opencode/opencode.json` containing local server variables to the target platforms:
 ```json
@@ -156,23 +213,14 @@ To use offline models, the synchronizer maps `opencode/opencode.json` containing
 }
 ```
 1. Start LM Studio on your local machine.
-2. Load your target instruction model and start the local inference server (running on `http://localhost:1234`).
+2. Load your target instruction model (e.g. `gemma-4-e4b-it` or `Qwen 2.5 Coder`) and start the local inference server (running on `http://localhost:1234`).
 3. Deploy target directories and execute command lines without cloud internet requirements!
 
 ---
 
-## 4. Multi-Repo Coordination & Machine Learning
+## 5. Prerequisites & Developer Tooling Matrix
 
-For enterprise multi-repo architectures, use the `run-multi-repo-coordinator.py` workspace coordinator:
-1. **Dynamic Sandbox Injection**: Automatically detects repository bounds and injects the corresponding environment settings (`.agents/`, `.claude/`, etc.) into each target folder.
-2. **Local Context Isolation**: Creates dedicated workspace parameters inside each repo sandbox.
-3. **Continuous Autonomous Learning**: Successful patterns, custom mappings, or architectural compromises learned dynamically in one repository are written directly back to `knowledge/company-patterns.md`. These patterns are sequentially injected into subsequent migration sandboxes, enabling your agents to learn from past executions and avoid repetitive troubleshooting!
-
----
-
-## 5. Prerequisites & Developer Tooling Installation
-
-To operate at maximum efficiency, the automated agents bypass unnecessary LLM token calls by validating syntax, configuration, and security practices locally via sandbox CLI tools first. Downstream agents automatically fall back to direct LLM reviews if a tool is missing, but **installing these native dependencies is highly recommended for production-grade correctness.**
+The automated agents bypass unnecessary LLM token calls by validating syntax, configuration, and security practices locally via sandbox CLI tools first. Downstream agents automatically fall back to direct LLM reviews if a tool is missing, but **installing these native dependencies is highly recommended for production-grade correctness.**
 
 ### Tooling Categories Required on Your Laptop
 
@@ -197,37 +245,29 @@ To operate at maximum efficiency, the automated agents bypass unnecessary LLM to
 
 ---
 
-### Automated macOS Installation (Recommended)
-
-An interactive, high-premium setup script has been prepared to check existing installations and automatically configure missing dependencies via Homebrew and Python.
-
-Run the installer from your workspace root:
-```bash
-./install-dev-tools.sh
-```
-
-The script will autonomously:
-1. Detect or configure **Homebrew** on your macOS laptop.
-2. Verify existing tooling versions on your file system.
-3. Automatically configure missing packages (e.g. `tflint`, `kubeconform`, `actionlint`, `gitleaks`, `hadolint`).
-4. Generate a comprehensive status report showing working and missing packages.
-
-> [!IMPORTANT]
-> Since security tools and compiler binaries run locally within the terminal session, ensure that your CLI tools (`antigravity` or `claude`) have permission to execute local shell processes. 
-
----
-
 ## 6. Advanced Agentic Optimization & Safety Controls
 
-This system utilizes state-of-the-art context optimizations and contract protections designed to maximize computational efficiency and secure execution bounds:
+This system incorporates state-of-the-art context optimizations, contract protections, and execution safeguards designed to prevent logic degradation, eliminate memory leaks, and maximize token efficiency:
 
-*   **Dynamic JIT Knowledge Enrichment (Mode B JIT)**: Instead of compiling massive static wiki references (which consume vast context budgets), offline subagents write precise docs/gotchas query payloads to `mcp_request.json` and yield. The supervisor intercepts, compiles the target resource, updates the wiki, and wakes the subagent. This keeps local scopes small and highly relevant.
-*   **Semantic Prompt Assembly**: Subagents never spend read and directory-scanning tokens browsing wiki folders. The orchestrator parses task parameters and explicitly injects *only* the absolute markdown paths of the matching wiki guidelines in the subagent's tool invocation arguments.
-*   **Progressive Context Compaction**: During multi-turn fix-and-gate-verify retry loops, context accumulates heavy traceback stdout logs. Compacting prior failure histories into structured single-line annotations (`[Attempt N Failed: {reason}]`) prevents model fatigue and logic degradation.
-*   **Surgical-Fix Dynamic MCP Escalation**: The sandboxed `surgical-fix` agent automatically requests dynamic web/API documentation searches when local wiki reference limits are reached, resulting in high patch success rates without manual human intervention.
-*   **Deterministic Script Delegation**: Shift heavy mock test generation and output processing from generative LLM blocks to parameterized local shell wrappers (`run-mock-tests.sh`). Deterministic validation layers prevent formatting bugs and save thousands of generative tokens.
-*   **Robust Shell Output JSON Escaping**: Directly embedding multi-line command stdout/stderr into double-quoted JSON strings triggers escape errors. The framework delegates formatting to inline Python scripts (`python3 -c 'import json, sys; ...; json.dump()'`), guaranteeing 100% syntactically valid JSON communication.
-*   **Bi-Level Schema Contract Enforcement**: Invoking schema contract checks (`validate_schemas.py`) recursively inside individual subagents and centrally inside the multi-repo coordinator ensures early detection and recovery from formatting drifts before any malformed outputs are committed.
+### Elite Token-Saving & Quality Optimization Patterns
+* **Dynamic JIT Knowledge Enrichment (Mode B JIT)**: Instead of compiling massive static wiki references (which consume vast context budgets), offline subagents write precise docs/gotchas query payloads to `mcp_request.json` and yield. The supervisor intercepts, compiles the target resource, updates the wiki, and wakes the subagent. This keeps local scopes small and highly relevant.
+* **Semantic Prompt Assembly**: Subagents never spend read and directory-scanning tokens browsing wiki folders. The orchestrator parses wave parameters and explicitly injects *only* the absolute markdown paths of the matching wiki guidelines in the subagent's tool invocation arguments.
+* **Progressive Context Compaction**: During multi-turn fix-and-gate-verify retry loops, context accumulates heavy traceback stdout logs. Compacting prior failure histories into structured single-line annotations (`[Attempt N Failed: {reason}]`) prevents model fatigue and logic degradation.
+* **Surgical-Fix Dynamic MCP Escalation**: The sandboxed `surgical-fix` agent automatically requests dynamic web/API documentation searches when local wiki reference limits are reached, resulting in high patch success rates without manual human intervention.
+* **Deterministic Script Delegation**: Shift heavy mock test generation and output processing from generative LLM blocks to parameterized local shell wrappers (`run-mock-tests.sh`). Deterministic validation layers prevent formatting bugs and save thousands of generative tokens.
+
+### Robust Validation & JSON Generation
+* **Natively Delegated Python JSON Exporters**: Directly embedding multi-line command stdout/stderr into double-quoted JSON strings triggers escape errors. The framework delegates formatting to inline Python scripts (`python3 -c 'import json, sys; ...; json.dump()'`), guaranteeing 100% syntactically valid JSON communication.
+* **Bi-Level Schema Contract Enforcement**: Invoking schema contract checks (`validate_schemas.py`) recursively inside individual subagents and centrally inside the multi-repo coordinator ensures early detection and recovery from formatting drifts before any malformed outputs are committed.
+* **Strict Provider Pinning**: Floating provider constraints (e.g. `>= 3.0`) represent a compliance risk. Pinning precise version constraints (e.g. `= 3.116.0`) prevents breaking upstream changes and is a core security requirement.
+* **Declarative Imports (`imports.tf`)**: Generating declarative `import` blocks is much safer and more auditable than imperative CLI commands (`terraform import`), preserving IaC state history in code review cycles.
+
+### Multi-Language AST Parsing & Resiliency
+* **Twin-Track Resiliency (AST + Regex Fallbacks)**: Always pair high-precision AST traversers (e.g. Tree-sitter parsers) with structurally matching Regex-based fallbacks. This ensures absolute architectural safety: if a host system lacks compilers, native headers, or pre-compiled bindings, the agentic pipeline degrades gracefully without interruption, maintaining highly detailed dependency extraction.
+* **Resilient Diagram Linting**: Direct regex matches like `\[.*[<>&].*\]` on diagram source lines contain hidden greedy bugs, spanning across connectors (like `-->`) and creating false positive compliance violations. Isolating node brackets and parsing label scopes individually ensures robust, comment-resilient syntax checking.
+* **Case-Insensitive Filename Traversal**: Checking exclusively for uppercase `SKILL.md` skips skills using lowercase `skill.md` (e.g. `coverage-auditor`, `dep-graph-builder`, `mermaid-linter`). File-existence checks are case-insensitive.
+* **Recursive Directory Sync**: The sync process recursively duplicates entire skill subdirectories rather than copying markdown documents in isolation, retaining crucial script runners (`run.py`), local variables, and asset templates.
+* **Offline Sandboxed Validation Gates**: Enforcing compliance against SKU and Tag standards using local mock validation wrappers (`run-mock-tests.sh`) avoids sandbox network timeouts while maintaining rigorous compliance checks against corporate standards.
 
 ---
 
@@ -302,4 +342,3 @@ Run offline unit tests to check syntax, schemas, and FinOps standards using HCL 
    cat output/artifacts/test-results.json
    ```
    *This validates that all files format cleanly, compile natively under `terraform validate`, and conform to mandatory sizing limitations (burstable VMs) and tags (`CostCenter`, `Orchestrator`).*
-

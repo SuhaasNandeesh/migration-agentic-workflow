@@ -122,6 +122,45 @@ def run_repo_migration(repo_conf, global_config):
     else:
         print(f"[!] Warning: No local orchestration engine (.opencode, .agents, etc.) found to replicate.")
 
+    # Replicate critical configuration, rules and tooling directories to target repo root
+    print(f"[-] Replicating configuration files, validation engines, and references...")
+    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json"]:
+        src_rules = os.path.join(BASE_DIR, rules_file)
+        dst_rules = os.path.join(target_dir, rules_file)
+        if os.path.exists(src_rules):
+            shutil.copy(src_rules, dst_rules)
+            
+    for tool_folder in ["validation", "migration-mapping"]:
+        src_folder = os.path.join(BASE_DIR, tool_folder)
+        dst_folder = os.path.join(target_dir, tool_folder)
+        if os.path.exists(src_folder):
+            if os.path.exists(dst_folder):
+                shutil.rmtree(dst_folder)
+            shutil.copytree(src_folder, dst_folder)
+
+    # Prevent target repository pollution by ensuring git ignores these tooling files
+    local_gitignore = os.path.join(target_dir, ".gitignore")
+    ignores = [
+        "\n# DevOps Agentic Workflow Orchestration Tools",
+        ".agents/", ".opencode/", ".gemini/", ".claude/", ".pi/",
+        "validation/", "migration-mapping/", "migration-config.json",
+        "AGENTS.md", "GEMINI.md", "CLAUDE.md",
+        "opencode.json", "antigravity.json", "gemini.json", "claude.json",
+        "output/", "DocumentationFactory/"
+    ]
+    existing_ignores = set()
+    if os.path.exists(local_gitignore):
+        with open(local_gitignore, 'r') as gf:
+            existing_ignores = set(gf.read().splitlines())
+            
+    with open(local_gitignore, 'a+') as gf:
+        # If gitignore is brand new, start it cleanly
+        if os.path.exists(local_gitignore) and os.path.getsize(local_gitignore) == 0:
+            gf.write("# Git Ignore Rules for Target Repository\n")
+        for ig in ignores:
+            if ig not in existing_ignores and ig.strip() not in existing_ignores:
+                gf.write(ig + "\n")
+
     # 3. Carry forward the consolidated company-patterns.md to the local workspace
     local_knowledge_dir = os.path.join(target_dir, "knowledge")
     os.makedirs(local_knowledge_dir, exist_ok=True)
