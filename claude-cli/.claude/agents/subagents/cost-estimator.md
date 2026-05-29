@@ -3,7 +3,6 @@ name: cost-estimator
 description: "Estimates infrastructure cost of generated code using Infracost or Azure Pricing API. Compares source vs target costs. Flags cost anomalies."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Cost Estimator Agent
 

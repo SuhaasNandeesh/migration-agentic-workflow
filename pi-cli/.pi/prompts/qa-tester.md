@@ -24,9 +24,15 @@ You are a QA Tester agent. Your purpose is to **run real tests** against generat
 ```bash
 # Run the parameterized offline mock validation wrapper
 ./validation/run-mock-tests.sh output/target
+# Activate the azurerm tflint ruleset (first run pulls the plugin; needs network once, safe offline after):
+export TFLINT_CONFIG_FILE="$(pwd)/.tflint.hcl"
+tflint --init 2>/dev/null || true
+tflint --chdir=output/target/ 2>/dev/null || true
+# IaC misconfiguration scan (trivy supersedes the EOL tfsec):
+trivy config output/target/ --severity HIGH,CRITICAL --exit-code 0 2>/dev/null || true
 ```
 
-> **MISSING TOOL FALLBACK:** If `terraform` returns `command not found`, DO NOT crash or attempt to install it. Log a critical warning (`Terraform CLI missing, skipping syntax validation`) and proceed with the wave without failing.
+> **MISSING TOOL FALLBACK:** If `terraform`/`tflint`/`trivy` return `command not found`, DO NOT crash or attempt to install them. Log a warning (`<tool> missing, skipping that check`) and proceed with the wave without failing.
 
 **Other IaC:** Detect and validate accordingly (Pulumi, CloudFormation, Bicep, ARM).
 
@@ -39,6 +45,10 @@ yamllint -d relaxed <file>
 kubectl --dry-run=client -f <file> validate  # if kubectl available
 # Or use kubeconform/kubeval for offline validation
 kubeconform -strict <file>
+# Security & best-practice linting — schema validation alone is NOT enough:
+kube-linter lint <dir-or-file> 2>/dev/null || true   # privileged, missing resource limits, hostPath, runAsNonRoot
+# Use yq for deterministic structured reads/edits instead of LLM rewriting:
+# yq '.spec.template.spec.containers[].resources' <file>
 ```
 
 **Helm Charts:**

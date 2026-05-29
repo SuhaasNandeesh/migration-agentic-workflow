@@ -1,8 +1,6 @@
 ---
 name: code-review
 description: "Provides review checklists and criteria for validating migration accuracy, code quality, and platform compliance."
-metadata:
-  version: "1.0"
 ---
 # Code Review
 

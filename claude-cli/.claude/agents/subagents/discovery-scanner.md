@@ -3,7 +3,6 @@ name: discovery-scanner
 description: "Scans the codebase to categorize files and identify cross-dependencies between Infrastructure, App Code, and CI/CD pipelines."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Discovery Scanner Agent
 

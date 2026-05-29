@@ -3,9 +3,7 @@ name: site-builder
 description: "Compiles the generated documentation into a static MkDocs site and performs deterministic Dead-Link checks and Markdown linting."
 tools:
   - read_file
-  - write_file
   - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Site Builder Agent

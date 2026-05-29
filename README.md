@@ -27,7 +27,7 @@ Our autonomous agents bypass slow, expensive LLM token requests by executing syn
 ```bash
 ./install-dev-tools.sh
 ```
-This script validates or configures Homebrew and installs essential binaries (`terraform`, `checkov`, `tflint`, `kubeconform`, `actionlint`, `hadolint`, `shellcheck`, `gitleaks`, `trufflehog`, `detect-secrets`).
+This script validates or configures Homebrew and installs **31 native binaries** across IaC (`terraform`, `tflint`, `checkov`, `trivy`), policy & cost (`infracost`, `opa`, `conftest`), Kubernetes (`kubeconform`, `kube-linter`, `helm`, `kustomize`), CI/CD & shell linting (`actionlint`, `yamllint`, `shellcheck`, `hadolint`), secret scanning (`gitleaks`, `trufflehog`, `detect-secrets`), cloud CLIs (`az`, `aws`, `bicep`), data utilities (`jq`, `yq`), and container supply-chain (`syft`, `grype`, `cosign`, `skopeo`, `crane`). See the full matrix in Section 5.
 
 ### Step 2: Configure AI Model API Keys or Local Endpoints
 Expose your API keys in your active terminal shell, or launch your offline model in **LM Studio** (see Section 4 for offline setup):
@@ -100,10 +100,13 @@ The injected **Supervisor** agent will boot up and execute the full DevOps wave-
 The `sync-cli-agents.py` script ensures that you maintain a single point of truth in `opencode` while deploying flawless configurations across distinct CLI engines:
 
 1. **Directory Lifecycle Management**: Cleans and recreates target platform folders (`.gemini/`, `.claude/`, `.pi/`, `.agents/`) to prevent context drift and stale assets.
-2. **Recursive Syncing**: Copies global directories (`DocumentationFactory`, `knowledge`, `migration-mapping`, `validation`, `migration-config.json`, and `run-multi-repo-coordinator.py`) recursively to target roots.
+2. **Recursive Syncing**: Copies global directories and files (`DocumentationFactory`, `knowledge`, `migration-mapping`, `validation`, `migration-config.json`, `.tflint.hcl`, and `run-multi-repo-coordinator.py`) recursively to target roots.
 3. **Dynamic Prompt Path Rewriting**: Automatically searches and translates custom paths inside agent instructions (e.g., rewriting `.opencode/skills/` and `.opencode/wiki/` to `.agents/skills/` or `.claude/wiki/`) so that the execution processes run flawlessly without referencing missing directories.
-4. **Bi-directional Model Context Protocol (MCP) Translation**: Parses the standard master config `opencode/opencode.json` (which uses a unified local MCP schema) and translates it to standard split `mcpServers` format for `.agents/mcp_config.json` and `.claude/mcp_config.json`.
+4. **Per-Platform MCP Translation**: Parses the master `opencode/opencode.json` `mcp` block and emits the correct `mcpServers` schema to each CLI's native discovery location — `.agents/mcp_config.json` (Antigravity), `.claude/mcp_config.json` + root `.mcp.json` (Claude), `.gemini/settings.json` (Gemini), and `.pi/mcp.json` (Pi) — while stripping the non-portable opencode-only `mcp`/`provider` blocks from the generated `*.json` configs.
 5. **Zero-Config Claude Bypasses**: Automatically compiles `.claude/settings.json` configuring `"defaultMode": "bypassPermissions"` to disable all interactive CLI permission prompts, enabling fully hands-off orchestration.
+6. **Capability-Faithful Tool Mapping**: Reads each agent's granular `tools:` capabilities (`read`/`write`/`edit`/`bash`/`glob`/`grep`/`fetch`) from the source frontmatter and translates them to every CLI's native tool names — preserving least-privilege (publishers stay read-only), in-place `edit` for surgical fixes, and web-`fetch` for the knowledge-compiler — instead of flattening every agent onto one fixed toolset.
+7. **Native Model Resolution & Sampling**: Cloud engines cannot consume opencode's local `lmstudio/...` model string, so Claude/Gemini/Antigravity fall back to native models (override per platform via `opencode.json` → `platform_models`); opencode and Pi keep the offline model. No temperature is force-pinned, so thinking/reasoning models run at their provider-recommended sampling.
+8. **Orchestrator Delegation & Skill Normalization**: Injects per-CLI subagent-invocation syntax into BOTH the `supervisor` and `doc-supervisor`, and normalizes every skill manifest to the `SKILL.md` casing Claude Code requires (so lowercase `skill.md` skills still register).
 
 ---
 
@@ -114,12 +117,13 @@ To run the agentic workflow on your actual codebases, copy the specific folders 
 ### For Antigravity CLI
 Copy the following items from the `antigravity-cli/` directory to your target codebase root:
 ```
-├── .agents/                        <-- Copied folder (includes agents, skills, configs, and wiki)
+├── .agents/                        <-- Copied folder (includes agents, skills, mcp_config.json, configs, and wiki)
 ├── DocumentationFactory/           <-- Copied folder (documentation compiler & markdown templates)
 ├── knowledge/                      <-- Copied folder (architectural and DevOps patterns)
 ├── migration-mapping/              <-- Copied folder (platform schemas and mapping dictionary)
 ├── validation/                     <-- Copied folder (DevSecOps checking and policies)
 ├── migration-config.json           <-- Copied file (custom migration source, target, & versions)
+├── .tflint.hcl                     <-- Copied file (tflint azurerm ruleset config)
 └── run-multi-repo-coordinator.py   <-- Copied file (multi-repo workspace coordinator & sequential learning)
 ```
 **To run:**
@@ -133,12 +137,14 @@ antigravity
 ### For Claude Code
 Copy the following items from the `claude-cli/` directory to your target codebase root:
 ```
-├── .claude/                        <-- Copied folder (includes settings.json, agents, skills, configs, and wiki)
+├── .claude/                        <-- Copied folder (includes settings.json, agents, skills, mcp_config.json, and wiki)
 ├── DocumentationFactory/           <-- Copied folder (documentation compiler & markdown templates)
 ├── knowledge/                      <-- Copied folder (architectural and DevOps patterns)
 ├── migration-mapping/              <-- Copied folder (platform schemas and mapping dictionary)
 ├── validation/                     <-- Copied folder (DevSecOps checking and policies)
 ├── migration-config.json           <-- Copied file (custom migration source, target, & versions)
+├── .mcp.json                       <-- Copied file (Claude Code project MCP server definitions)
+├── .tflint.hcl                     <-- Copied file (tflint azurerm ruleset config)
 └── run-multi-repo-coordinator.py   <-- Copied file (multi-repo workspace coordinator & sequential learning)
 ```
 **To run:**
@@ -151,7 +157,7 @@ claude
 > **Primary vs. Secondary Agent Separation in Claude Code:**
 > To prevent terminal autocomplete clutter and avoid the 15-item truncation ceiling in Claude Code's `@` search, the synchronization script automatically structures custom agents into two tiers:
 > - **Primary Agents** (`supervisor.md`, `doc-supervisor.md`) are placed directly in `.claude/agents/` to remain easily discoverable in your top-level autocompletes and `/agents` command library.
-> - **Secondary/Subagents** (the other 29 specialized agents) are nested neatly in `.claude/agents/subagents/`.
+> - **Secondary/Subagents** (the other 31 specialized agents) are nested neatly in `.claude/agents/subagents/`.
 > Because Claude Code scans subagent directories recursively, all subagents remain fully registered and runnable natively (e.g. via background calls like `claude -p --dangerously-skip-permissions --agent <name>`) while keeping your primary interactive environment clean, elegant, and uncluttered!
 
 ---
@@ -159,13 +165,14 @@ claude
 ### For Gemini CLI
 Copy the following items from the `gemini-cli/` directory to your target codebase root:
 ```
-├── .gemini/                        <-- Copied folder (includes agents, skills, and wiki)
+├── .gemini/                        <-- Copied folder (includes agents, skills, wiki, and settings.json w/ mcpServers)
 ├── gemini.json                     <-- Copied file (main gemini CLI config schema)
 ├── DocumentationFactory/           <-- Copied folder (documentation compiler & templates)
 ├── knowledge/                      <-- Copied folder (DevOps patterns & wikis)
 ├── migration-mapping/              <-- Copied folder (migration dictionary)
 ├── validation/                     <-- Copied folder (SecOps checking rules)
 ├── migration-config.json           <-- Copied file (custom migration settings)
+├── .tflint.hcl                     <-- Copied file (tflint azurerm ruleset config)
 └── run-multi-repo-coordinator.py   <-- Copied file (multi-repo orchestration executor)
 ```
 **To run:**
@@ -179,13 +186,14 @@ gemini
 ### For Pi CLI
 Copy the following items from the `pi-cli/` directory to your target codebase root:
 ```
-├── .pi/                            <-- Copied folder (includes prompts, skills, and wiki)
+├── .pi/                            <-- Copied folder (includes prompts, skills, wiki, and mcp.json)
 ├── pi.config.ts                    <-- Copied file (TypeScript config entrypoint)
 ├── DocumentationFactory/           <-- Copied folder (documentation compiler & templates)
 ├── knowledge/                      <-- Copied folder (DevOps patterns & wikis)
 ├── migration-mapping/              <-- Copied folder (migration mapping dictionaries)
 ├── validation/                     <-- Copied folder (DevSecOps validation suite)
 ├── migration-config.json           <-- Copied file (custom migration configurations)
+├── .tflint.hcl                     <-- Copied file (tflint azurerm ruleset config)
 └── run-multi-repo-coordinator.py   <-- Copied file (multi-repo workspace runner)
 ```
 **To run:**
@@ -216,6 +224,13 @@ To use offline models, the synchronizer maps `opencode/opencode.json` containing
 2. Load your target instruction model (e.g. `gemma-4-e4b-it` or `Qwen 2.5 Coder`) and start the local inference server (running on `http://localhost:1234`).
 3. Deploy target directories and execute command lines without cloud internet requirements!
 
+> [!NOTE]
+> **Model selection & sampling.** The offline LM Studio model applies to **opencode** and **Pi** (both support OpenAI-compatible local serving). **Claude, Gemini, and Antigravity** use their native cloud models — defaults are `sonnet` and `gemini-2.5-pro`, overridable per platform in `opencode.json`:
+> ```json
+> "platform_models": { "claude": "opus", "gemini": "gemini-2.5-flash", "antigravity": "gemini-2.5-pro" }
+> ```
+> Agents pin **no temperature**, so thinking/reasoning models run at their provider-recommended sampling (forcing a low temperature degrades a model's reasoning chain). Reproducibility comes from the offline tool-gates, schema validation, and mock tests — not from sampling.
+
 ---
 
 ## 5. Prerequisites & Developer Tooling Matrix
@@ -227,11 +242,16 @@ The automated agents bypass unnecessary LLM token calls by validating syntax, co
 | Domain | Binary / Package | Purpose in Agentic Lifecycle |
 |---|---|---|
 | **Infrastructure as Code** | `terraform` | Local offline configuration compile gate (`terraform validate/fmt/test`). |
-| | `tflint` | Static analysis checking for Cloud provider naming and SKU errors. |
-| | `tfsec` | Fast offline checks for insecure cloud infrastructure configurations. |
+| | `tflint` | Static analysis checking for Cloud provider naming and SKU errors (enable the `azurerm` ruleset plugin via `tflint --init` for Azure-specific rules). |
+| | `tfsec` | Fast offline checks for insecure cloud infrastructure configurations. *(Note: tfsec is EOL — Aqua merged it into Trivy; prefer `trivy config`.)* |
 | | `checkov` | Policy-as-code and configuration analyzer for multi-cloud deployments. |
+| | `trivy` | Modern all-in-one scanner: IaC misconfig (`trivy config`), container image vulns, SBOM, and secret detection. Supersedes tfsec. |
+| **Policy-as-Code & Cost** | `infracost` | Cost-estimator engine — diffs AWS vs Azure pricing and flags cost anomalies. |
+| | `opa` | Open Policy Agent — evaluates org-specific governance policies as code. |
+| | `conftest` | Runs OPA/Rego policy tests against Terraform plan JSON and Kubernetes YAML. |
 | **Kubernetes & Helm** | `kubectl` | Validates generated YAML manifests via offline client-side dry runs. |
 | | `kubeconform` | Lightning-fast schema checker for target API compliance. |
+| | `kube-linter` | Security & best-practice linting (privileged containers, missing limits, hostPath) — complements schema-only `kubeconform`. |
 | | `helm` | Compiles and lints target Helm chart structure (`helm template/lint`). |
 | | `kustomize` | Verifies overlays and YAML variants. |
 | **CI/CD & Code Linting** | `actionlint` | Verifies GitHub Actions workflow syntax, triggers, permissions, and security. |
@@ -241,6 +261,15 @@ The automated agents bypass unnecessary LLM token calls by validating syntax, co
 | **DevSecOps Secret Scanning** | `gitleaks` | (Preferred) Scans migration directory for accidental secret leakages. |
 | | `trufflehog` | File system deep scanner for database credentials and tokens. |
 | | `detect-secrets` | Yelp secret scanner to detect security baseline vulnerabilities. |
+| **Cloud Provider CLIs** | `az` | Azure CLI — optional ONLINE validation of naming/SKU/region and `az deployment ... what-if` (auth-dependent). |
+| | `aws` | AWS CLI — optional live source-side introspection when the source is a running AWS account (auth-dependent). |
+| | `bicep` | Compiles/validates Azure Bicep when the chosen target language is Bicep rather than Terraform. |
+| **Structured Data Utilities** | `jq` | Deterministic JSON manipulation in helper scripts. |
+| | `yq` | Deterministic YAML manipulation for Kubernetes manifests and pipeline files. |
+| **Supply-Chain & Containers** | `syft` | Generates a CycloneDX/SPDX SBOM for migrated container images/artifacts. |
+| | `grype` | Scans the SBOM/image for known CVEs. |
+| | `cosign` | Verifies container image signatures/provenance. |
+| | `skopeo` / `crane` | Registry-to-registry image copy for ECR → ACR moves (no local Docker daemon needed). |
 | **Workflow & Shell** | `gh` | Fetches live execution logs for self-healing loops if pipeline runs fail. |
 
 ---
@@ -269,11 +298,22 @@ This system incorporates state-of-the-art context optimizations, contract protec
 * **Recursive Directory Sync**: The sync process recursively duplicates entire skill subdirectories rather than copying markdown documents in isolation, retaining crucial script runners (`run.py`), local variables, and asset templates.
 * **Offline Sandboxed Validation Gates**: Enforcing compliance against SKU and Tag standards using local mock validation wrappers (`run-mock-tests.sh`) avoids sandbox network timeouts while maintaining rigorous compliance checks against corporate standards.
 
+### Production Migration Fidelity & DevSecOps Depth
+* **Deterministic Azure Naming Validation**: The `azure-naming-validator` skill checks generated `azurerm_*` names against Azure's per-resource rules (length, charset, global uniqueness) entirely offline — catching a failure class `terraform validate` misses and that otherwise only surfaces at `apply` time.
+* **azurerm `tflint` Ruleset**: A workspace `.tflint.hcl` enables the `tflint-ruleset-azurerm` plugin so `tflint` catches Azure-specific invalid SKUs, deprecated arguments, and naming issues (activated once via `tflint --init`).
+* **Layered Security Scanning**: The `security` agent runs `trivy config` (IaC misconfig), `kube-linter` (K8s security/best-practice beyond schema), `conftest`/`opa` (org policy-as-code), and a container supply-chain pass (`trivy image`, `syft` SBOM, `grype`, `cosign`; `skopeo`/`crane` for ECR→ACR copy).
+* **Secrets-Store Migration (`secrets-migrator`)**: Maps AWS Secrets Manager / SSM Parameter Store / KMS to Azure Key Vault and produces a reference-rewrite plan so workloads authenticate via Managed Identity + RBAC — never moving secret values into code.
+* **Opt-In Online Drift Gate (`drift-verifier`)**: When cloud credentials are present, runs a read-only `terraform plan` / `az ... what-if` and verifies declarative state-import zero-diff before packaging; skips cleanly (never blocks) in offline mode.
+* **Expanded Migration Knowledge**: Wiki patterns + gotchas now cover data (RDS → Flexible Server, S3 → Blob, DynamoDB → Cosmos DB), secrets/KMS → Key Vault, serverless (Lambda → Functions), messaging (SQS/SNS → Service Bus/Event Grid), observability (CloudWatch → Azure Monitor), DNS (Route 53 → Azure DNS), and Azure DevOps Pipelines.
+
 ---
 
 ## 7. Premium Verification & Cross-Model Validation Pipeline
 
 To obtain absolute confidence in the migrated infrastructure before deploying to production, we recommend invoking a **Cross-Model Validation Pipeline** where a secondary foundation model (e.g. Google Gemini via Antigravity) acts as an independent auditor to peer-review the output generated by a primary model (e.g. Anthropic Claude via Claude Code).
+
+> [!TIP]
+> The autonomous pipeline already includes an opt-in **`drift-verifier`** agent that runs `terraform plan` / `az ... what-if` against the target whenever cloud credentials are available. The manual cross-model review below is **complementary** — it surfaces model-specific hallucinations and schema gotchas that a plan alone cannot.
 
 Follow this step-by-step process to perform a manual cross-model peer review and local verification:
 

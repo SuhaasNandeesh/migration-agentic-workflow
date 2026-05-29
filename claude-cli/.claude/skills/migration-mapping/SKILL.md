@@ -1,8 +1,6 @@
 ---
 name: migration-mapping
 description: "Provides pattern-based guidance for mapping resources between cloud platforms. References are EXAMPLES — agents should use LLM knowledge for resources not listed. Extensible for new platforms."
-metadata:
-  version: "1.0"
 ---
 # Migration Mapping
 

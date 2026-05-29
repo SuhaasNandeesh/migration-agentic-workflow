@@ -12,23 +12,25 @@ You have access to the following subagents as tools. You MUST invoke them by nam
 1. **knowledge-compiler** — Compiles raw references into wiki pages (step 0)
 2. **source-analyzer** — Scans and inventories the source codebase
 3. **migration-mapper** — Maps source resources to target platform equivalents
-4. **planner** — Creates structured migration execution plan (with waves & categories)
-5. **developer** — Generates target platform code (ONE category per invocation)
-6. **code-reviewer** — Reviews migration accuracy (supports dual-mode: full/retry)
-7. **qa-tester** — Runs real validation tools (supports dual-mode: full/retry)
-8. **validator** — Enforces standards compliance (runs ONCE after all waves)
-9. **security** — Enforces DevSecOps + secret scanning + compliance policies (runs ONCE after all waves)
-10. **cost-estimator** — Estimates infrastructure cost, compares source vs target, flags anomalies
-11. **documentation** — Generates runbooks, mapping docs, ADRs, state migration guides
-12. **evaluator** — Measures migration completeness and quality
-13. **packager** — Assembles deployment-ready bundle + PR metadata
-14. **memory-writer** — Persists learnings + updates wiki
-15. **shared-memory-writer** — Extracts lessons learned to the global knowledge base
-16. **git-publisher** — Commits and conditionally pushes final code to a feature branch.
-17. **feedback** — Suggests improvements + lints wiki
+4. **secrets-migrator** — Maps source secret/config/key stores (Secrets Manager, SSM, KMS) to Key Vault + produces reference-rewrite plan (runs after mapper, feeds developer)
+5. **planner** — Creates structured migration execution plan (with waves & categories)
+6. **developer** — Generates target platform code (ONE category per invocation)
+7. **code-reviewer** — Reviews migration accuracy (supports dual-mode: full/retry)
+8. **qa-tester** — Runs real validation tools (supports dual-mode: full/retry)
+9. **validator** — Enforces standards compliance (runs ONCE after all waves)
+10. **security** — Enforces DevSecOps + secret scanning + supply-chain + compliance policies (runs ONCE after all waves)
+11. **drift-verifier** — OPT-IN online gate: `terraform plan`/`az what-if` + state-import zero-diff (skips cleanly when no cloud credentials; never blocks offline runs)
+12. **cost-estimator** — Estimates infrastructure cost, compares source vs target, flags anomalies
+13. **documentation** — Generates runbooks, mapping docs, ADRs, state migration guides
+14. **evaluator** — Measures migration completeness and quality
+15. **packager** — Assembles deployment-ready bundle + PR metadata
+16. **memory-writer** — Persists learnings + updates wiki
+17. **shared-memory-writer** — Extracts lessons learned to the global knowledge base
+18. **git-publisher** — Commits and conditionally pushes final code to a feature branch.
+19. **feedback** — Suggests improvements + lints wiki
 
 ### Retry Agent (invoked only on gate failures)
-18. **surgical-fix** — Fixes ONLY specific issues in specific files during retry loops
+20. **surgical-fix** — Fixes ONLY specific issues in specific files during retry loops
 
 ## How to Delegate
 
@@ -146,7 +148,7 @@ For massive enterprise codebases, your LLM context will still bloat if you remem
 ```
 start → [resume check] → [knowledge-compiler cache check] →
   [deterministic pre-scan] → source-analyzer → [cross-verify accuracy] →
-  migration-mapper → planner (produces category-ordered waves) →
+  migration-mapper → secrets-migrator → planner (produces category-ordered waves) →
 
   FOR EACH WAVE:
     FOR EACH CATEGORY in wave:
@@ -162,8 +164,9 @@ start → [resume check] → [knowledge-compiler cache check] →
   END WAVE
 
   [git commit -am "all waves complete"] →
-  validator(ALL files) → security(ALL files, + secret scan + policies) →
+  validator(ALL files) → security(ALL files, + secret scan + supply-chain + policies) →
     (either fails) → surgical-fix → re-run failed gate (RETRY MODE)
+  drift-verifier(OPT-IN: online plan/what-if + import zero-diff; skips cleanly if no cloud creds) →
   cost-estimator → documentation → evaluator → packager → memory-writer → shared-memory-writer → git-publisher → feedback → end
 ```
 

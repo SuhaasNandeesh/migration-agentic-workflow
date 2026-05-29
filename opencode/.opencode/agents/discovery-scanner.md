@@ -7,7 +7,6 @@ tools:
   glob: true
   grep: true
   bash: true
-temperature: 0.2
 ---
 # Discovery Scanner Agent
 

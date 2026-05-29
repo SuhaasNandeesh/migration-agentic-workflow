@@ -95,6 +95,16 @@ def run_repo_migration(repo_conf, global_config):
         print(f"[!] Skip Repo {repo_id}: Source or Target path is empty.")
         return False
 
+    # Refuse the shipped placeholder paths so running the coordinator before
+    # editing migration-config.json does not scaffold junk like "path/to/azure-*".
+    def _is_placeholder(p):
+        return (not p) or "path/to/" in p or p.strip().rstrip("/").startswith("path/to")
+    if _is_placeholder(source_dir) or _is_placeholder(target_dir):
+        print(f"[!] Skip Repo {repo_id}: placeholder paths detected "
+              f"(source='{source_dir}', target='{target_dir}'). "
+              f"Edit migration-config.json with real source_dir/target_dir first.")
+        return False
+
     # Resolve target directory relative to current root if relative
     if not os.path.isabs(target_dir):
         target_dir = os.path.abspath(os.path.join(BASE_DIR, target_dir))
@@ -124,7 +134,7 @@ def run_repo_migration(repo_conf, global_config):
 
     # Replicate critical configuration, rules and tooling directories to target repo root
     print(f"[-] Replicating configuration files, validation engines, and references...")
-    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json"]:
+    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl"]:
         src_rules = os.path.join(BASE_DIR, rules_file)
         dst_rules = os.path.join(target_dir, rules_file)
         if os.path.exists(src_rules):
@@ -145,7 +155,7 @@ def run_repo_migration(repo_conf, global_config):
         ".agents/", ".opencode/", ".gemini/", ".claude/", ".pi/",
         "validation/", "migration-mapping/", "migration-config.json",
         "AGENTS.md", "GEMINI.md", "CLAUDE.md",
-        "opencode.json", "antigravity.json", "gemini.json", "claude.json",
+        "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl",
         "output/", "DocumentationFactory/"
     ]
     existing_ignores = set()

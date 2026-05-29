@@ -3,7 +3,6 @@ name: migration-mapper
 description: "Maps source platform resources to target platform equivalents dynamically. Uses pattern-based mapping references and LLM knowledge for any resource type. Handles unknown resources gracefully."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Migration Mapper Agent
 

@@ -34,7 +34,7 @@ echo -e "${CYAN}${BOLD}   DevOps Migration Factory - macOS Tooling Setup Script$
 echo -e "${CYAN}${BOLD}======================================================================${NC}"
 
 # Verification tracking
-TOTAL_PLANNED=16
+TOTAL_PLANNED=31
 INSTALLED_COUNT=0
 MISSING_COUNT=0
 FAILED_COUNT=0
@@ -151,6 +151,15 @@ check_and_install_brew "terraform" "hashicorp/tap/terraform" "IaC"
 check_and_install_brew "tflint" "terraform-linters/tap/tflint" "IaC"
 check_and_install_brew "tfsec" "tfsec" "IaC"
 check_and_install_pip "checkov" "checkov" "IaC"
+# Trivy supersedes the now-EOL tfsec and also covers container image, SBOM, and
+# secret scanning from one binary (used by the security agent's modern scan path).
+check_and_install_brew "trivy" "trivy" "IaC"
+
+# Category 1b: Policy-as-Code & Cost (org governance + FinOps)
+echo -e "\n${BOLD}[1b] Policy-as-Code & Cost Category${NC}"
+check_and_install_brew "infracost" "infracost" "Cost"
+check_and_install_brew "opa" "opa" "Policy"
+check_and_install_brew "conftest" "conftest" "Policy"
 
 # Category 2: Kubernetes Manifests & Linting
 echo -e "\n${BOLD}[2] Kubernetes Manifests & Helm Category${NC}"
@@ -158,6 +167,8 @@ check_and_install_brew "kubectl" "kubernetes-cli" "K8s"
 check_and_install_brew "kubeconform" "kubeconform" "K8s"
 check_and_install_brew "helm" "helm" "K8s"
 check_and_install_brew "kustomize" "kustomize" "K8s"
+# kubeconform only validates schema; kube-linter adds security/best-practice checks.
+check_and_install_brew "kube-linter" "kube-linter" "K8s"
 
 # Category 3: CI/CD & Shell Static Analysis
 echo -e "\n${BOLD}[3] CI/CD & Shell Static Analysis Category${NC}"
@@ -175,6 +186,28 @@ check_and_install_pip "detect-secrets" "detect-secrets" "Security"
 # Category 5: Git Integration
 echo -e "\n${BOLD}[5] Shell Integrations Category${NC}"
 check_and_install_brew "gh" "gh" "Git"
+
+# Category 6: Cloud Provider CLIs
+# Auth-dependent: enable optional ONLINE validation (Azure naming/SKU/region,
+# `az deployment ... what-if`, `terraform plan`) and live source-side AWS introspection.
+echo -e "\n${BOLD}[6] Cloud Provider CLIs Category${NC}"
+check_and_install_brew "az" "azure-cli" "Azure"
+check_and_install_brew "aws" "awscli" "AWS"
+check_and_install_brew "bicep" "bicep" "Azure"
+
+# Category 7: Structured Data Utilities (deterministic JSON/YAML manipulation)
+echo -e "\n${BOLD}[7] Structured Data Utilities Category${NC}"
+check_and_install_brew "jq" "jq" "Data"
+check_and_install_brew "yq" "yq" "Data"
+
+# Category 8: Supply-Chain & Container Security (used by the security agent when
+# migrating container workloads: image scan, SBOM, vuln scan, signing, ECR->ACR copy)
+echo -e "\n${BOLD}[8] Supply-Chain & Container Security Category${NC}"
+check_and_install_brew "syft" "syft" "Supply-Chain"
+check_and_install_brew "grype" "grype" "Supply-Chain"
+check_and_install_brew "cosign" "cosign" "Supply-Chain"
+check_and_install_brew "skopeo" "skopeo" "Container"
+check_and_install_brew "crane" "crane" "Container"
 
 # Print Installation Summary
 echo -e "\n${CYAN}${BOLD}======================================================================${NC}"

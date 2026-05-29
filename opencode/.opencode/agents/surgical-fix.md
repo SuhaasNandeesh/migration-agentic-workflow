@@ -8,7 +8,6 @@ tools:
   bash: true
   glob: true
   grep: true
-temperature: 0.2
 ---
 # Surgical Fix Agent
 

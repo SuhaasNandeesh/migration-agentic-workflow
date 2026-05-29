@@ -1,9 +1,8 @@
 ---
 name: shared-memory-writer
 description: "Shared Memory Writer agent. Analyzes pipeline logs and surgical-fix actions to extract lessons learned, writing them to a global knowledge base."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Edit
 model: sonnet
-mode: subagent
 ---
 # Shared Memory Writer Agent
 

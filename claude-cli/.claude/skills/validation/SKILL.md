@@ -1,8 +1,6 @@
 ---
 name: validation
 description: "Executes validation checks including syntax, execution, standards compliance, and migration completeness. Standards for multiple domains available in references/."
-metadata:
-  version: "2.0"
 ---
 # Validation
 

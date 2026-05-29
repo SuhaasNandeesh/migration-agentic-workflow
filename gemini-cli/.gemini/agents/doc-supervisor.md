@@ -4,8 +4,6 @@ description: "Primary orchestrator for the Codebase Documentation Factory. Manag
 tools:
   - read_file
   - write_file
-  - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Doc-Supervisor Agent
@@ -96,3 +94,7 @@ Maintain a running log at `DocumentationFactory/output/pipeline-log.md`. Update 
 
 ## 10. Strict Tool Spelling Rule
 *   You MUST use exact tool names. The wildcard file search tool is strictly named `glob`. Do NOT write `globe` (with an 'e') — that spelling hallucination will crash the execution.
+
+## CLI-Specific Autonomous Delegation (Gemini CLI)
+To invoke a subagent autonomously, you MUST use the `@<agent-name>` syntax in your prompt (e.g., `@code-reviewer please review the generated files`).
+To utilize a skill, ensure you request it via standard prompt interaction or slash commands like `/skills <skill-name>` if available.

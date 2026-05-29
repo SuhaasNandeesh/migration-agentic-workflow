@@ -4,7 +4,6 @@ mode: primary
 tools:
   read: true
   write: true
-temperature: 0.2
 ---
 # Doc-Supervisor Agent
 

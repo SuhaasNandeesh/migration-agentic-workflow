@@ -4,8 +4,9 @@ description: "Generates comprehensive migration documentation including runbooks
 tools:
   - read_file
   - write_file
+  - replace
   - run_shell_command
-  - search_file_content
+  - glob
 model: inherit
 ---
 # Documentation Agent

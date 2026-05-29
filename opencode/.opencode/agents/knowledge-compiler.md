@@ -7,7 +7,6 @@ tools:
   fetch: true
   glob: true
   grep: true
-temperature: 0.3
 ---
 # Knowledge Compiler Agent
 

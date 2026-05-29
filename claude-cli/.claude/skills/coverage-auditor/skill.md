@@ -1,6 +1,6 @@
 ---
+name: coverage-auditor
 description: "A Python skill that acts as a Deterministic Quality Gate. It cross-references the LLM's coverage tags against the Baseline Census to mathematically prove documentation completeness."
-mode: tool
 ---
 # Coverage Auditor
 
@@ -8,7 +8,7 @@ mode: tool
 Run the script to reconcile documentation coverage against the original dependency graph.
 
 ```bash
-python3 .opencode/skills/coverage-auditor/run.py \
+python3 .claude/skills/coverage-auditor/run.py \
   --deps DocumentationFactory/output/artifacts/dependency-graph.json \
   --specs DocumentationFactory/output/artifacts/infrastructure-specs.json \
   --flows DocumentationFactory/output/artifacts/pipeline-flows.json

@@ -1,9 +1,8 @@
 ---
 name: doc-reviewer
 description: "Quality Gate agent. Compares generated Markdown specs against raw source code to catch hallucinations, omissions, or factual errors."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Bash
 model: sonnet
-mode: subagent
 ---
 # Doc Reviewer Agent
 

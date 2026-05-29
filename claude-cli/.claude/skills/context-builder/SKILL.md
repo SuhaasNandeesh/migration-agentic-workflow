@@ -1,8 +1,6 @@
 ---
 name: context-builder
 description: "Constructs minimal, relevant, and structured context for agent execution. Provides migration templates, standards references, and memory data. Templates cover Azure Terraform, AKS K8s, and GitHub Actions."
-metadata:
-  version: "2.0"
 ---
 # Context Builder
 

@@ -4,8 +4,10 @@ description: "Compiles raw reference materials into structured wiki entity pages
 tools:
   - read_file
   - write_file
-  - run_shell_command
+  - glob
   - search_file_content
+  - web_fetch
+  - google_web_search
 model: inherit
 ---
 # Knowledge Compiler Agent

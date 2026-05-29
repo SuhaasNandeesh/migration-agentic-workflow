@@ -3,7 +3,6 @@ name: planner
 description: "Creates structured migration execution plans from source inventory and migration mappings. Breaks migration into ordered tasks per service/module with dependencies."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Planner Agent
 

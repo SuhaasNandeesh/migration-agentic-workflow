@@ -4,8 +4,8 @@ description: "Persists useful knowledge to the memory store autonomously after s
 tools:
   - read_file
   - write_file
+  - replace
   - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Memory Writer Agent

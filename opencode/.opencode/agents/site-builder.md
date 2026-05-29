@@ -4,7 +4,6 @@ mode: subagent
 tools:
   read: true
   bash: true
-temperature: 0.1
 ---
 # Site Builder Agent
 

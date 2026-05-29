@@ -5,7 +5,6 @@ tools:
   - read_file
   - write_file
   - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Doc Reviewer Agent

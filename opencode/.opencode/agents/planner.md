@@ -7,7 +7,6 @@ tools:
   bash: true
   glob: true
   grep: true
-temperature: 0.3
 ---
 # Planner Agent
 

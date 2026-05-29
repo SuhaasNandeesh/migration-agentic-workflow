@@ -1,9 +1,8 @@
 ---
 name: doc-supervisor
 description: "Primary orchestrator for the Codebase Documentation Factory. Manages the execution flow from discovery to final wiki assembly."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write
 model: sonnet
-mode: primary
 ---
 # Doc-Supervisor Agent
 
@@ -93,3 +92,7 @@ Maintain a running log at `DocumentationFactory/output/pipeline-log.md`. Update 
 
 ## 10. Strict Tool Spelling Rule
 *   You MUST use exact tool names. The wildcard file search tool is strictly named `glob`. Do NOT write `globe` (with an 'e') — that spelling hallucination will crash the execution.
+
+## CLI-Specific Autonomous Delegation (Claude Code CLI)
+To invoke a subagent autonomously, you MUST use the `Bash` tool to run the Claude CLI in non-interactive/headless mode with the `-p` flag and skip permissions (e.g., `claude -p --dangerously-skip-permissions --agent code-reviewer "Please review the generated files"`). This is essential to prevent terminal hangs and ensure the process runs fully autonomously.
+To utilize a skill/command, invoke the custom slash command `/<skill-name>` natively or run `claude -p --dangerously-skip-permissions /<skill-name>` via the Bash tool.

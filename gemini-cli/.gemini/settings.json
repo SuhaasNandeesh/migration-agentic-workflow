@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "terraform-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@hashicorp/terraform-mcp-server"
+      ],
+      "env": {}
+    },
+    "web-fetch": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -4,8 +4,7 @@ description: "Surgical fix agent. Patches specific markdown errors identified by
 tools:
   - read_file
   - write_file
-  - run_shell_command
-  - search_file_content
+  - replace
 model: inherit
 ---
 # Doc Surgical Fix Agent

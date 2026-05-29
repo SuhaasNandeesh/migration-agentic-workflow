@@ -1,8 +1,6 @@
 ---
 name: memory-write
 description: "Writes structured memory entries to the memory store after successful task completion."
-metadata:
-  version: "1.0"
 ---
 # Memory Write
 
@@ -11,7 +9,7 @@ Write structured memory entries securely to `memory-store/assets/` using the aut
 ## Usage
 Run the execution script to append memories safely:
 ```bash
-python3 .opencode/skills/memory-write/run.py --problem "..." --fix "..." --tags "tag1,tag2" --confidence "high"
+python3 .claude/skills/memory-write/run.py --problem "..." --fix "..." --tags "tag1,tag2" --confidence "high"
 ```
 
 ## target Locations Auto-Resolved

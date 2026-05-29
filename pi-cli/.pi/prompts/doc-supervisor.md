@@ -90,3 +90,7 @@ Maintain a running log at `DocumentationFactory/output/pipeline-log.md`. Update 
 
 ## 10. Strict Tool Spelling Rule
 *   You MUST use exact tool names. The wildcard file search tool is strictly named `glob`. Do NOT write `globe` (with an 'e') — that spelling hallucination will crash the execution.
+
+## CLI-Specific Autonomous Delegation (pi.dev)
+To invoke a subagent autonomously, you MUST use `/<agent-name>` to expand its Prompt Template (e.g., `/code-reviewer`).
+To utilize a skill, load it when your tasks match its description or invoke it directly if supported.

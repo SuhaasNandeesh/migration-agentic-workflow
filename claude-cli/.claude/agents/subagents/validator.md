@@ -3,7 +3,6 @@ name: validator
 description: "Validates artifacts for correctness, execution readiness, and strict standards compliance. Runs linters and validators autonomously and returns structured results."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Validator Agent
 
@@ -72,14 +71,17 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 - Run `validation/run-mock-tests.sh`
 - Capture and parse output
 - Fail if exit code != 0
+- **Azure naming compliance (deterministic, offline):** run the `azure-naming-validator` skill and treat any `error`-severity finding as a BLOCKING violation (these only fail at apply time otherwise):
+  `python3 .claude/skills/azure-naming-validator/run.py --dir output/target --output output/artifacts/azure-naming-results.json`
 
 **For Pipelines:**
 - Run `tool-executor/scripts/pipeline_linter.sh`
 - Fail if structure invalid
 
 **For Kubernetes:**
-- Validate YAML syntax
-- Check against schema if available
+- Validate YAML syntax (and use `yq` for deterministic structured field checks)
+- Check against schema if available (`kubeconform -strict`)
+- Run `kube-linter lint <dir>` for security/best-practice compliance (schema checks alone miss privileged containers, missing resource limits, hostPath); treat HIGH findings as blocking violations
 
 **Rule:** Tool output overrides LLM judgment — always.
 

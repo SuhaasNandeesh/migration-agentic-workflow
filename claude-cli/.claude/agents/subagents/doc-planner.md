@@ -1,9 +1,8 @@
 ---
 name: doc-planner
 description: "Reads the dependency graph and batches the documentation files into small, context-safe Waves to prevent OOM errors."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write
 model: sonnet
-mode: subagent
 ---
 # Doc Planner Agent
 

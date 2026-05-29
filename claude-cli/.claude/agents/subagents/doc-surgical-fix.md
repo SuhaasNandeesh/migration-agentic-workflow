@@ -1,9 +1,8 @@
 ---
 name: doc-surgical-fix
 description: "Surgical fix agent. Patches specific markdown errors identified by the doc-reviewer without regenerating the entire file."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Edit
 model: sonnet
-mode: subagent
 ---
 # Doc Surgical Fix Agent
 

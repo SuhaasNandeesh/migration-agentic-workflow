@@ -1,9 +1,8 @@
 ---
 name: developer
 description: "Generates target platform implementation files from migration mappings. Translates any source resource to its target equivalent, writing complete production-ready files to disk."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Developer Agent
 
@@ -83,7 +82,13 @@ Before generating code, read ONLY the wiki pages mapped to your current category
 | nat_gateway | `azurerm_nat_gateway` | `aws-nat-to-azure-nat`, `finops-cost-optimization` | `nat-gateway-no-delete-protection` |
 | identity | `azurerm_user_assigned_identity` | `aws-iam-to-azure-msi`, `entra-workload-identity`, `github-actions-oidc` | — |
 | kubernetes | `kubernetes_deployment`, `kubernetes_service` | `eks-to-aks-manifests`, `azure-cni-overlay-cilium`, `entra-workload-identity`, `finops-cost-optimization` | `aks-workload-identity`, `ecr-to-acr` |
-| cicd | `github_actions_workflow` | `gitlab-ci-to-github-actions`, `jenkins-to-github-actions`, `github-actions-oidc` | — |
+| cicd | `github_actions_workflow` | `gitlab-ci-to-github-actions`, `jenkins-to-github-actions`, `github-actions-oidc`, `azure-devops-pipelines` | — |
+| data / database / storage | — | `aws-rds-to-azure-flexible-server`, `aws-s3-to-azure-blob`, `aws-dynamodb-to-cosmosdb` | `storage-account-global-naming`, `cosmosdb-request-units` |
+| secrets / kms / config | — | `aws-secretsmanager-to-keyvault` | `keyvault-soft-delete-purge` |
+| serverless / functions | — | `aws-lambda-to-azure-functions` | `storage-account-global-naming` |
+| messaging / queue / events | — | `aws-sqs-sns-to-messaging` | — |
+| observability / monitoring | — | `aws-cloudwatch-to-azure-monitor` | — |
+| dns | — | `aws-route53-to-azure-dns` | — |
 | scripts | — | `aws-cli-to-azure-cli` | — |
 | *unknown* | — (use LLM knowledge) | — | — |
 
@@ -229,6 +234,9 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 - **Stateful Resource Import Generation:**
   - Identify stateful target components (Storage Accounts, Databases/SQL, CosmosDB, Container Registries, KeyVaults).
   - For each stateful component, generate a declarative `imports.tf` file containing standard `import {}` blocks mapping the source AWS identity/ARN to the target Azure fully qualified Resource ID. Include an toggle `enable_state_import` in `variables.tf` to control execution of these imports.
+- **Azure Naming Compliance (Self-Check):** Azure enforces strict, per-resource naming rules (length, charset, global uniqueness) that `terraform validate` cannot catch — they only fail at apply time. After writing your category's files, self-check names by running the `azure-naming-validator` skill and fix any `error`-severity findings before returning:
+  `python3 .claude/skills/azure-naming-validator/run.py --dir output/target --output output/artifacts/azure-naming-results.json`
+  Key rules to bake in while generating: storage accounts are 3–24 lowercase alphanumerics and **globally unique**; Key Vault/ACR/Cosmos DB/flexible-servers/App Service are also globally unique (always add an org/env/region discriminator). The skill's `SKILL.md` has the full constraints table.
 
 ## Global Core Instructions
 ## 1. Disk-Based I/O Protocol (Context Preservation)
@@ -290,8 +298,8 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 ## Just-in-Time Context Hydration Standards (AST)
 ## 11. Just-in-Time Context Hydration Protocol (AST Code Folding)
 *   To prevent context bloat on large files (>= 1,000 lines), do NOT read them raw. First run the `ast-stubber` skill to generate a structural stub:
-    `python3 .agents/skills/ast-stubber/run.py --file <path> --stub --output output/artifacts/stubs/<path>`
+    `python3 .claude/skills/ast-stubber/run.py --file <path> --stub --output output/artifacts/stubs/<path>`
     Read only the lightweight stub to map out signatures.
 *   If you need to read/edit folded blocks (e.g. `// ... [Folded Block: aws_instance.web]`), first run `ast-stubber` in hydration mode to extract the exact code snippet:
-    `python3 .agents/skills/ast-stubber/run.py --file <path> --hydrate --block-name <symbol>` or `--line-range <start>-<end>`
+    `python3 .claude/skills/ast-stubber/run.py --file <path> --hydrate --block-name <symbol>` or `--line-range <start>-<end>`
 *   This JIT expansion prevents context pollution while maintaining compiler-grade accuracy.

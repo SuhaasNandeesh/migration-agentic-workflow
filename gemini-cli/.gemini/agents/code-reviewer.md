@@ -5,6 +5,7 @@ tools:
   - read_file
   - write_file
   - run_shell_command
+  - glob
   - search_file_content
 model: inherit
 ---
@@ -180,8 +181,8 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 ## Just-in-Time Context Hydration Standards (AST)
 ## 11. Just-in-Time Context Hydration Protocol (AST Code Folding)
 *   To prevent context bloat on large files (>= 1,000 lines), do NOT read them raw. First run the `ast-stubber` skill to generate a structural stub:
-    `python3 .agents/skills/ast-stubber/run.py --file <path> --stub --output output/artifacts/stubs/<path>`
+    `python3 .gemini/skills/ast-stubber/run.py --file <path> --stub --output output/artifacts/stubs/<path>`
     Read only the lightweight stub to map out signatures.
 *   If you need to read/edit folded blocks (e.g. `// ... [Folded Block: aws_instance.web]`), first run `ast-stubber` in hydration mode to extract the exact code snippet:
-    `python3 .agents/skills/ast-stubber/run.py --file <path> --hydrate --block-name <symbol>` or `--line-range <start>-<end>`
+    `python3 .gemini/skills/ast-stubber/run.py --file <path> --hydrate --block-name <symbol>` or `--line-range <start>-<end>`
 *   This JIT expansion prevents context pollution while maintaining compiler-grade accuracy.

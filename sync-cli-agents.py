@@ -65,7 +65,7 @@ def setup_directories():
         
     # Set up Workspace items for all target CLI platforms and always overwrite to keep them in sync
     target_roots = [GEMINI_ROOT, CLAUDE_ROOT, PI_ROOT, ANTIGRAVITY_ROOT]
-    workspace_items = ["DocumentationFactory", "knowledge", "migration-mapping", "validation", "migration-config.json", "run-multi-repo-coordinator.py"]
+    workspace_items = ["DocumentationFactory", "knowledge", "migration-mapping", "validation", "migration-config.json", "run-multi-repo-coordinator.py", ".tflint.hcl"]
     
     for target_root in target_roots:
         os.makedirs(target_root, exist_ok=True)
@@ -98,59 +98,173 @@ def setup_directories():
             shutil.copytree(wiki_src, target_wiki)
             print(f"Synced Wiki to {os.path.relpath(target_wiki, BASE_DIR)}")
 
+def yaml_dq(s):
+    """Return a YAML-safe double-quoted scalar (escapes backslashes and quotes)
+    so descriptions containing quotes/colons cannot break generated frontmatter."""
+    s = str(s).replace('\\', '\\\\').replace('"', '\\"')
+    return f'"{s}"'
+
+# Claude Code / Gemini / Antigravity cannot consume opencode's local
+# "lmstudio/..." model strings, so cloud platforms fall back to native models.
+# Override per platform via opencode.json -> "platform_models": {...}.
+DEFAULT_PLATFORM_MODELS = {
+    'claude': 'sonnet',
+    'gemini': 'gemini-2.5-pro',
+    'antigravity': 'gemini-2.5-pro',
+}
+
+def resolve_platform_models(config):
+    pm = config.get('platform_models') if isinstance(config.get('platform_models'), dict) else {}
+    out = dict(DEFAULT_PLATFORM_MODELS)
+    for k in out:
+        if pm.get(k):
+            out[k] = pm[k]
+    return out
+
+def resolve_claude_model():
+    p = os.path.join(OPENCODE_ROOT, 'opencode.json')
+    if os.path.exists(p):
+        try:
+            with open(p) as f:
+                return resolve_platform_models(json.load(f))['claude']
+        except Exception:
+            pass
+    return DEFAULT_PLATFORM_MODELS['claude']
+
 def parse_md(filepath):
     with open(filepath, 'r') as f:
-        content = f.read()
-    
-    match = re.match(r'^---\n(.*?)\n---\n(.*)', content, re.DOTALL)
+        # Normalize CRLF/CR so frontmatter detection is line-ending agnostic.
+        content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+
+    match = re.match(r'^---\n(.*?)\n---\n?(.*)', content, re.DOTALL)
     if not match:
         return {}, content
-    
+
     frontmatter_str = match.group(1)
     body = match.group(2)
-    
+
     frontmatter = {}
     current_key = None
+    current_is_block = False  # True only after a key that opens a nested block
     for line in frontmatter_str.split('\n'):
-        if not line.strip(): continue
-        if line.startswith('  ') and current_key:
+        if not line.strip():
+            continue
+        if line.startswith('  ') and current_key and current_is_block:
+            # nested map/list entry (e.g. under `tools:`)
             if not isinstance(frontmatter[current_key], list):
                 frontmatter[current_key] = []
             frontmatter[current_key].append(line.strip().split(':')[0].strip('- '))
-        else:
-            if ':' in line:
-                k, v = line.split(':', 1)
-                frontmatter[k.strip()] = v.strip().strip('"\'')
-                current_key = k.strip()
+        elif not line.startswith(' ') and ':' in line:
+            k, v = line.split(':', 1)
+            k = k.strip()
+            v = v.strip().strip('"\'')
+            frontmatter[k] = v
+            current_key = k
+            # An empty value means this key opens a nested block; only then do we
+            # treat following indented lines as children (prevents clobbering a
+            # scalar like `description` if an indented line happens to follow).
+            current_is_block = (v == '')
     return frontmatter, body
 
-def build_gemini_frontmatter(name, fm):
+# --- Per-agent tool capability mapping ---------------------------------------
+# Source agents declare granular capabilities in their frontmatter `tools:` map
+# (read/write/edit/bash/glob/grep/fetch). We translate each ENABLED capability
+# into the native tool names of every target CLI, so that per-agent privileges,
+# in-place edit support (surgical-fix), and web-fetch access (knowledge-compiler)
+# are all preserved after sync instead of being flattened to a fixed superset.
+CAP_ORDER = ['read', 'write', 'edit', 'bash', 'glob', 'grep', 'fetch']
+
+CAP_TO_TOOLS = {
+    'gemini': {
+        'read': ['read_file'],
+        'write': ['write_file'],
+        'edit': ['replace'],
+        'bash': ['run_shell_command'],
+        'glob': ['glob'],
+        'grep': ['search_file_content'],
+        'fetch': ['web_fetch', 'google_web_search'],
+    },
+    'claude': {
+        'read': ['Read'],
+        'write': ['Write'],
+        'edit': ['Edit'],
+        'bash': ['Bash'],
+        'glob': ['Glob'],
+        'grep': ['Grep'],
+        'fetch': ['WebFetch', 'WebSearch'],
+    },
+    'antigravity': {
+        'read': ['read_file', 'view_file'],
+        'write': ['write_file', 'write_to_file'],
+        'edit': ['replace_file_content', 'multi_replace_file_content'],
+        'bash': ['run_command'],
+        'glob': ['list_dir'],
+        'grep': ['grep_search'],
+        'fetch': ['web_fetch'],
+    },
+}
+
+def parse_tool_caps(filepath):
+    """Extract the set of enabled tool capabilities from an agent's frontmatter
+    `tools:` map. Returns a safe default if no tools block is declared."""
+    with open(filepath, 'r') as f:
+        content = f.read()
+    m = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+    if not m:
+        return {'read', 'write', 'bash', 'glob', 'grep'}
+    caps = set()
+    in_tools = False
+    for line in m.group(1).split('\n'):
+        if re.match(r'^tools:\s*$', line):
+            in_tools = True
+            continue
+        if in_tools:
+            tm = re.match(r'^\s+([A-Za-z_]+):\s*(true|false)\s*$', line)
+            if tm:
+                if tm.group(2).lower() == 'true':
+                    caps.add(tm.group(1).lower())
+                continue
+            if re.match(r'^\S', line):  # reached the next top-level key
+                in_tools = False
+    return caps or {'read', 'write', 'bash', 'glob', 'grep'}
+
+def map_tools(platform, caps):
+    """Translate a set of source capabilities into ordered, de-duplicated native
+    tool names for the given platform."""
+    tools, seen = [], set()
+    for cap in CAP_ORDER:
+        if cap in caps:
+            for t in CAP_TO_TOOLS[platform].get(cap, []):
+                if t not in seen:
+                    seen.add(t)
+                    tools.append(t)
+    return tools
+
+def build_gemini_frontmatter(name, fm, tools, temperature=None):
     desc = fm.get('description', '')
-    tools = ['read_file', 'write_file', 'run_shell_command', 'search_file_content']
-    res = f"---\nname: {name}\ndescription: \"{desc}\"\ntools:\n"
+    res = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\ntools:\n"
     for t in tools:
         res += f"  - {t}\n"
+    if temperature is not None:
+        res += f"temperature: {temperature}\n"
     res += "model: inherit\n---\n"
     return res
 
-def build_claude_frontmatter(name, fm):
+def build_claude_frontmatter(name, fm, tools, temperature=None, model='sonnet'):
+    # Note: Claude Code subagents have no `mode` field (primary vs subagent is
+    # determined by directory placement), so it is intentionally omitted here.
     desc = fm.get('description', '')
-    mode = fm.get('mode', 'subagent')
-    res = f"---\nname: {name}\ndescription: \"{desc}\"\ntools: Read, Write, Bash, Glob, Grep\nmodel: sonnet\nmode: {mode}\n---\n"
+    res = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\ntools: {', '.join(tools)}\nmodel: {model}\n"
+    if temperature is not None:
+        res += f"temperature: {temperature}\n"
+    res += "---\n"
     return res
 
-def build_pi_frontmatter(name, fm):
+def build_pi_frontmatter(name, fm, temperature=None):
+    # Pi prompt templates inherit the agent's GLOBAL toolset (read/write/edit/bash/...),
+    # so tools are not granted per-template; temperature is a global Pi config concept.
     desc = fm.get('description', '')
-    res = f"---\nname: {name}\ndescription: \"{desc}\"\n---\n"
-    return res
-
-def build_antigravity_frontmatter(name, fm):
-    desc = fm.get('description', '')
-    tools = ['read_file', 'write_file', 'run_command', 'grep_search', 'list_dir', 'view_file', 'write_to_file', 'replace_file_content', 'multi_replace_file_content']
-    res = f"---\nname: {name}\ndescription: \"{desc}\"\ntools:\n"
-    for t in tools:
-        res += f"  - {t}\n"
-    res += "model: inherit\n---\n"
+    res = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
     return res
 
 def clean_markdown(text):
@@ -161,47 +275,43 @@ def clean_markdown(text):
     return text.strip()
 
 def process_agents():
+    claude_model = resolve_claude_model()
     system_common_path = os.path.join(OPENCODE_DIR, "agents", "system_common.md")
-    raw_system_common_len = 0
-    if os.path.exists(system_common_path):
-        with open(system_common_path, 'r') as f:
-            raw_system_common_len = len(f.read())
-            
-    # Parse categorized rules from system_common.md
-    core_rules = []
-    devops_rules = []
-    ast_rules = []
-    
+
+    # Parse categorized rules from system_common.md. Categories are marked with
+    # `## [CORE] / [DEVOPS] / [AST]` headings; the tag is stripped robustly and a
+    # plain `## ` heading (no tag) ends the current category.
+    core_rules, devops_rules, ast_rules = [], [], []
+    cat_buckets = {"core": core_rules, "devops": devops_rules, "ast": ast_rules}
     current_category = None
     if os.path.exists(system_common_path):
         with open(system_common_path, 'r') as f:
             for line in f:
-                if line.startswith("## [CORE]"):
-                    current_category = "core"
-                    core_rules.append(line.replace("[CORE] ", ""))
-                elif line.startswith("## [DEVOPS]"):
-                    current_category = "devops"
-                    devops_rules.append(line.replace("[DEVOPS] ", ""))
-                elif line.startswith("## [AST]"):
-                    current_category = "ast"
-                    ast_rules.append(line.replace("[AST] ", ""))
+                m_cat = re.match(r'^##\s*\[(CORE|DEVOPS|AST)\]\s*', line)
+                if m_cat:
+                    current_category = m_cat.group(1).lower()
+                    cat_buckets[current_category].append(
+                        re.sub(r'^(##\s*)\[(?:CORE|DEVOPS|AST)\]\s*', r'\1', line))
                 elif line.startswith("## "):
                     current_category = None
-                else:
-                    if current_category == "core":
-                        core_rules.append(line)
-                    elif current_category == "devops":
-                        devops_rules.append(line)
-                    elif current_category == "ast":
-                        ast_rules.append(line)
-                        
+                elif current_category:
+                    cat_buckets[current_category].append(line)
+
     core_body = "".join(core_rules).strip()
     devops_body = "".join(devops_rules).strip()
     ast_body = "".join(ast_rules).strip()
 
+    # Pre-build the stitchable rule blocks once and reuse per agent.
+    core_block = ("\n\n## Global Core Instructions\n" + core_body) if core_body else ""
+    devops_block = ("\n\n## Global DevOps & IaC Standards\n" + devops_body) if devops_body else ""
+    ast_block = ("\n\n## Just-in-Time Context Hydration Standards (AST)\n" + ast_body) if ast_body else ""
+    devops_agents = ["developer", "qa-tester", "validator", "security", "cost-estimator", "knowledge-compiler", "planner", "secrets-migrator", "drift-verifier"]
+    ast_agents = ["developer", "code-reviewer", "surgical-fix", "spec-analyst", "flow-tracer"]
+
     agent_files = glob.glob(os.path.join(OPENCODE_DIR, "agents", "*.md"))
-    
+
     total_raw_chars = 0
+    total_precompile_chars = 0
     total_compiled_chars = 0
     processed_count = 0
     
@@ -212,51 +322,62 @@ def process_agents():
             
         fm, body = parse_md(filepath)
         processed_count += 1
-        
+
+        # Derive per-agent tool capabilities and sampling temperature from the
+        # source frontmatter so privileges/edit/fetch/temperature are preserved.
+        caps = parse_tool_caps(filepath)
+        temperature = fm.get('temperature')
+        gemini_tools = map_tools('gemini', caps)
+        claude_tools = map_tools('claude', caps)
+        antigravity_tools = map_tools('antigravity', caps)
+
         # Calculate raw characters (original body)
         raw_char_len = len(body)
         total_raw_chars += raw_char_len
         
-        # Combine stitched body using dynamic semantic guidelines selection
+        # Combine stitched body using dynamic semantic guidelines selection:
+        # every agent gets CORE; only DevOps/AST agents get their extra blocks.
         stitched_rules = []
-        if core_body:
-            stitched_rules.append("\n\n## Global Core Instructions\n" + core_body)
-            
-        devops_agents = ["developer", "qa-tester", "validator", "security", "cost-estimator", "knowledge-compiler", "planner"]
-        if name in devops_agents and devops_body:
-            stitched_rules.append("\n\n## Global DevOps & IaC Standards\n" + devops_body)
-            
-        ast_agents = ["developer", "code-reviewer", "surgical-fix", "spec-analyst", "flow-tracer"]
-        if name in ast_agents and ast_body:
-            stitched_rules.append("\n\n## Just-in-Time Context Hydration Standards (AST)\n" + ast_body)
-            
+        if core_block:
+            stitched_rules.append(core_block)
+        if name in devops_agents and devops_block:
+            stitched_rules.append(devops_block)
+        if name in ast_agents and ast_block:
+            stitched_rules.append(ast_block)
+
         combined_body = body + "".join(stitched_rules)
-            
+        total_precompile_chars += len(combined_body)
+
         # Clean comments and compress whitespace
         combined_body = clean_markdown(combined_body)
-        
-        # Rewrite wiki and skill paths inside agent instructions (including relative and absolute variants)
+        total_compiled_chars += len(combined_body)
+
+        # Rewrite wiki and skill paths inside agent instructions (relative `../`
+        # and plain variants, for both skills and wiki).
         gemini_body = combined_body.replace("../.opencode/skills/", ".gemini/skills/") \
                           .replace(".opencode/skills/", ".gemini/skills/") \
+                          .replace("../.opencode/wiki/", ".gemini/wiki/") \
                           .replace(".opencode/wiki/", ".gemini/wiki/")
-        
+
         claude_body = combined_body.replace("../.opencode/skills/", ".claude/skills/") \
                           .replace(".opencode/skills/", ".claude/skills/") \
+                          .replace("../.opencode/wiki/", ".claude/wiki/") \
                           .replace(".opencode/wiki/", ".claude/wiki/")
-        
+
         pi_body = combined_body.replace("../.opencode/skills/", ".pi/skills/") \
                       .replace(".opencode/skills/", ".pi/skills/") \
+                      .replace("../.opencode/wiki/", ".pi/wiki/") \
                       .replace(".opencode/wiki/", ".pi/wiki/")
-        
+
         antigravity_body = combined_body.replace("../.opencode/skills/", ".agents/skills/") \
                                 .replace(".opencode/skills/", ".agents/skills/") \
+                                .replace("../.opencode/wiki/", ".agents/wiki/") \
                                 .replace(".opencode/wiki/", ".agents/wiki/")
         
-        # Track compiled characters (we take antigravity body as baseline)
-        total_compiled_chars += len(antigravity_body)
-        
-        # Inject CLI-specific delegation logic to the supervisor
-        if name == "supervisor":
+        # Inject CLI-specific delegation logic into BOTH orchestrators.
+        # doc-supervisor is also mode:primary and delegates to the documentation
+        # subagents, so it needs the same per-CLI invocation mechanism as supervisor.
+        if name in ("supervisor", "doc-supervisor"):
             gemini_body += "\n\n## CLI-Specific Autonomous Delegation (Gemini CLI)\n"
             gemini_body += "To invoke a subagent autonomously, you MUST use the `@<agent-name>` syntax in your prompt (e.g., `@code-reviewer please review the generated files`).\n"
             gemini_body += "To utilize a skill, ensure you request it via standard prompt interaction or slash commands like `/skills <skill-name>` if available.\n"
@@ -274,12 +395,12 @@ def process_agents():
             antigravity_body += "To utilize a skill, ensure you refer to the skills configured under `.agents/skills/` (the platform automatically discovers them) or trigger them via slash commands like `/skills <skill-name>`.\n"
 
         # Gemini CLI Output
-        gemini_fm = build_gemini_frontmatter(name, fm)
+        gemini_fm = build_gemini_frontmatter(name, fm, gemini_tools, temperature)
         with open(os.path.join(GEMINI_AGENTS_DIR, f"{name}.md"), 'w') as f:
             f.write(gemini_fm + gemini_body)
             
         # Claude CLI Output
-        claude_fm = build_claude_frontmatter(name, fm)
+        claude_fm = build_claude_frontmatter(name, fm, claude_tools, temperature, model=claude_model)
         claude_target_dir = CLAUDE_AGENTS_DIR
         if fm.get('mode') != 'primary':
             claude_target_dir = os.path.join(CLAUDE_AGENTS_DIR, "subagents")
@@ -288,7 +409,7 @@ def process_agents():
             f.write(claude_fm + claude_body)
 
         # Pi CLI Output
-        pi_fm = build_pi_frontmatter(name, fm)
+        pi_fm = build_pi_frontmatter(name, fm, temperature)
         with open(os.path.join(PI_AGENTS_DIR, f"{name}.md"), 'w') as f:
             f.write(pi_fm + pi_body)
 
@@ -296,26 +417,38 @@ def process_agents():
         agent_dir = os.path.join(ANTIGRAVITY_AGENTS_DIR, name)
         os.makedirs(agent_dir, exist_ok=True)
         
+        # Single authoritative system prompt (also written to instructions.md
+        # below). We intentionally do NOT duplicate it into a second JSON field,
+        # which previously stored the full prompt twice and bloated context.
         agent_config = {
             "name": name,
             "description": fm.get('description', ''),
             "model": "inherit",
-            "tools": ['read_file', 'write_file', 'run_command', 'grep_search', 'list_dir', 'view_file', 'write_to_file', 'replace_file_content', 'multi_replace_file_content'],
-            "system_instructions": antigravity_body,
+            "tools": antigravity_tools,
             "instructions": antigravity_body
         }
+        if temperature is not None:
+            try:
+                agent_config["temperature"] = float(temperature)
+            except (TypeError, ValueError):
+                pass
         with open(os.path.join(agent_dir, "agent.json"), 'w') as f:
             json.dump(agent_config, f, indent=2)
             
         with open(os.path.join(agent_dir, "instructions.md"), 'w') as f:
             f.write(antigravity_body)
             
-    # Calculate and report prompt compilation savings
-    savings_chars = (total_raw_chars + (raw_system_common_len * processed_count)) - total_compiled_chars
+    # Report actual compilation footprint plus two MEASURED savings (not an
+    # invented baseline): selective rule stitching vs embedding every shared
+    # block in every agent, and the comment-strip/whitespace minification delta.
+    full_rules_len = len(core_block) + len(devops_block) + len(ast_block)
+    naive_total = total_raw_chars + full_rules_len * processed_count
+    selective_savings = naive_total - total_precompile_chars
+    minified = total_precompile_chars - total_compiled_chars
     print(f"Processed {processed_count} agents across all platforms.")
-    print(f"[TOKEN SAVINGS] Combined total characters before compile: {total_raw_chars + (raw_system_common_len * processed_count)}")
-    print(f"[TOKEN SAVINGS] Stitched & Minified characters after compile: {total_compiled_chars}")
-    print(f"[TOKEN SAVINGS] Dynamic prompt minification saved ~{savings_chars} characters (~{int(savings_chars / 4)} tokens) per platform run!")
+    print(f"[COMPILE] Raw agent bodies: {total_raw_chars} chars; after selective stitching: {total_precompile_chars} chars; compiled: {total_compiled_chars} chars.")
+    print(f"[COMPILE] Selective rule stitching saved ~{selective_savings} chars (~{max(selective_savings, 0) // 4} tokens) vs embedding all shared rules in every agent.")
+    print(f"[COMPILE] Comment-strip & whitespace minification removed ~{minified} chars (~{max(minified, 0) // 4} tokens) per platform.")
 
 def process_skills():
     skill_dirs = glob.glob(os.path.join(OPENCODE_DIR, "skills", "*"))
@@ -345,20 +478,29 @@ def process_skills():
         if os.path.exists(os.path.join(gemini_skill_dir, "skill.md")) and os.path.join(gemini_skill_dir, "skill.md") != os.path.join(gemini_skill_dir, "SKILL.md"):
             os.remove(os.path.join(gemini_skill_dir, "skill.md"))
         
-        gemini_fm = f"---\nname: {name}\ndescription: \"{desc}\"\n---\n"
+        gemini_fm = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
         gemini_body = body.replace(".opencode/skills/", ".gemini/skills/")
         with open(os.path.join(gemini_skill_dir, "SKILL.md"), 'w') as f:
             f.write(gemini_fm + gemini_body)
             
         # --- 2. Claude Command & Skill ---
         # Claude commands are single files
-        claude_fm = f"---\nname: {name}\ndescription: \"{desc}\"\n---\n"
+        claude_fm = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
         claude_body = body.replace(".opencode/skills/", ".claude/skills/")
         with open(os.path.join(CLAUDE_CMDS_DIR, f"{name}.md"), 'w') as f:
             f.write(claude_fm + claude_body)
         # Claude helper scripts and resources
         claude_skill_dir = os.path.join(CLAUDE_SKILLS_DIR, name)
         shutil.copytree(skill_dir, claude_skill_dir)
+        # Normalize the skill manifest to uppercase SKILL.md — Claude Code's skill
+        # loader requires SKILL.md, so lowercase skill.md skills (ast-stubber,
+        # coverage-auditor, dep-graph-builder, mermaid-linter) would not register.
+        claude_lower_skill = os.path.join(claude_skill_dir, "skill.md")
+        claude_upper_skill = os.path.join(claude_skill_dir, "SKILL.md")
+        if os.path.exists(claude_lower_skill) and claude_lower_skill != claude_upper_skill:
+            os.remove(claude_lower_skill)
+        with open(claude_upper_skill, 'w') as f:
+            f.write(f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n" + claude_body)
             
         # --- 3. Pi Skill ---
         pi_skill_dir = os.path.join(PI_SKILLS_DIR, name)
@@ -366,7 +508,7 @@ def process_skills():
         if os.path.exists(os.path.join(pi_skill_dir, "skill.md")) and os.path.join(pi_skill_dir, "skill.md") != os.path.join(pi_skill_dir, "SKILL.md"):
             os.remove(os.path.join(pi_skill_dir, "skill.md"))
         
-        pi_fm = f"---\nname: {name}\ndescription: \"{desc}\"\n---\n"
+        pi_fm = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
         pi_body = body.replace(".opencode/skills/", ".pi/skills/")
         with open(os.path.join(pi_skill_dir, "SKILL.md"), 'w') as f:
             f.write(pi_fm + pi_body)
@@ -377,7 +519,7 @@ def process_skills():
         if os.path.exists(os.path.join(antigravity_skill_dir, "skill.md")) and os.path.join(antigravity_skill_dir, "skill.md") != os.path.join(antigravity_skill_dir, "SKILL.md"):
             os.remove(os.path.join(antigravity_skill_dir, "skill.md"))
             
-        antigravity_fm = f"---\nname: {name}\ndescription: \"{desc}\"\n---\n"
+        antigravity_fm = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
         antigravity_body = body.replace(".opencode/skills/", ".agents/skills/")
         with open(os.path.join(antigravity_skill_dir, "SKILL.md"), 'w') as f:
             f.write(antigravity_fm + antigravity_body)
@@ -415,30 +557,48 @@ def process_configs():
         with open(opencode_json_path, 'r') as f:
             config = json.load(f)
 
-        # Gemini config
+        # Cloud CLIs can't use opencode's local "lmstudio/..." model or its
+        # openai-compatible `provider` block, so they use native models instead.
+        # (Offline/LM Studio remains supported on opencode + Pi.)
+        platform_models = resolve_platform_models(config)
+
+        # Gemini config (drop opencode-only 'mcp'/'provider'; Gemini reads
+        # mcpServers from .gemini/settings.json, written separately below)
         gemini_config = json.loads(json.dumps(config))
+        gemini_config.pop('mcp', None)
+        gemini_config.pop('provider', None)
+        gemini_config['model'] = platform_models['gemini']
         gemini_config['instructions'] = ["GEMINI.md", "migration-config.json"]
         gemini_config['permission'] = {
             "read_file": "allow",
             "write_file": "allow",
+            "replace": "allow",
             "run_shell_command": "allow",
+            "glob": "allow",
             "search_file_content": "allow",
             "web_fetch": "allow",
+            "google_web_search": "allow",
             "skill": config['permission'].get('skill', {})
         }
         with open(os.path.join(GEMINI_ROOT, 'gemini.json'), 'w') as f:
             json.dump(gemini_config, f, indent=2)
  
-        # Claude config
+        # Claude config (drop opencode-only 'mcp'/'provider'; use a native Claude
+        # model; MCP servers are written to .mcp.json and .claude/mcp_config.json)
         claude_config = json.loads(json.dumps(config))
+        claude_config.pop('mcp', None)
+        claude_config.pop('provider', None)
+        claude_config['model'] = platform_models['claude']
         claude_config['instructions'] = ["CLAUDE.md", "migration-config.json"]
         claude_config['permission'] = {
             "Read": "allow",
             "Write": "allow",
+            "Edit": "allow",
             "Bash": "allow",
             "Glob": "allow",
             "Grep": "allow",
-            "Fetch": "allow",
+            "WebFetch": "allow",
+            "WebSearch": "allow",
             "command": config['permission'].get('skill', {})
         }
         with open(os.path.join(CLAUDE_ROOT, 'claude.json'), 'w') as f:
@@ -456,7 +616,9 @@ def process_configs():
         with open(os.path.join(CLAUDE_ROOT, '.claude', 'settings.json'), 'w') as f:
             json.dump(claude_settings, f, indent=2)
 
-        # Pi config
+        # Pi config. No temperature is pinned here so the chosen model uses its
+        # own provider-recommended sampling (important for thinking/reasoning
+        # models, where forcing a low temperature degrades the reasoning chain).
         model = config.get('model', 'lmstudio/gemma-4-e4b-it')
         pi_config_content = f"""export default {{
   model: "{model}",
@@ -467,8 +629,12 @@ def process_configs():
         with open(os.path.join(PI_ROOT, 'pi.config.ts'), 'w') as f:
             f.write(pi_config_content)
 
-        # Antigravity config
+        # Antigravity config (drop opencode-only 'mcp'/'provider'; use a native
+        # model; MCP servers are written to .agents/mcp_config.json below)
         antigravity_config = json.loads(json.dumps(config))
+        antigravity_config.pop('mcp', None)
+        antigravity_config.pop('provider', None)
+        antigravity_config['model'] = platform_models['antigravity']
         antigravity_config['instructions'] = ["AGENTS.md", "migration-config.json"]
         antigravity_config['permission'] = {
             "read_file": "allow",
@@ -513,10 +679,27 @@ def process_configs():
             "mcpServers": mcp_servers
         }
         
-        # Write MCP Configs
+        # Write MCP Configs to each platform's native discovery location so the
+        # servers actually reach every CLI and travel with the orchestration folder:
+        #   - Antigravity: .agents/mcp_config.json
+        #   - Claude Code: .claude/mcp_config.json + project-root .mcp.json
+        #   - Gemini CLI:  .gemini/settings.json -> mcpServers
+        #   - Pi:          .pi/mcp.json -> mcpServers
         with open(os.path.join(ANTIGRAVITY_ROOT, '.agents', 'mcp_config.json'), 'w') as f:
             json.dump(mcp_config_data, f, indent=2)
         with open(os.path.join(CLAUDE_ROOT, '.claude', 'mcp_config.json'), 'w') as f:
+            json.dump(mcp_config_data, f, indent=2)
+        with open(os.path.join(CLAUDE_ROOT, '.mcp.json'), 'w') as f:
+            json.dump(mcp_config_data, f, indent=2)
+
+        gemini_settings_path = os.path.join(GEMINI_ROOT, '.gemini', 'settings.json')
+        os.makedirs(os.path.dirname(gemini_settings_path), exist_ok=True)
+        with open(gemini_settings_path, 'w') as f:
+            json.dump(mcp_config_data, f, indent=2)
+
+        pi_mcp_path = os.path.join(PI_ROOT, '.pi', 'mcp.json')
+        os.makedirs(os.path.dirname(pi_mcp_path), exist_ok=True)
+        with open(pi_mcp_path, 'w') as f:
             json.dump(mcp_config_data, f, indent=2)
 
         print("Successfully generated configuration files for all platforms.")

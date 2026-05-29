@@ -1,8 +1,6 @@
 ---
 name: tool-executor
 description: "Executes real tools and scripts for validation purposes. Captures stdout/stderr and returns exit status. Scripts available in scripts/ directory."
-metadata:
-  version: "1.0"
 ---
 # Tool Executor
 

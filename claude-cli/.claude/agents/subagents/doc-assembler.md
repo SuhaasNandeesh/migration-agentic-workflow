@@ -1,9 +1,8 @@
 ---
 name: doc-assembler
 description: "Stitches outputs from all documentation subagents into a cohesive, interlinked standard Markdown wiki."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write
 model: sonnet
-mode: subagent
 ---
 # Doc Assembler Agent
 

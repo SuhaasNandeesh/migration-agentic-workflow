@@ -86,3 +86,7 @@ Maintain a running log at `DocumentationFactory/output/pipeline-log.md`. Update 
 
 ## 10. Strict Tool Spelling Rule
 *   You MUST use exact tool names. The wildcard file search tool is strictly named `glob`. Do NOT write `globe` (with an 'e') — that spelling hallucination will crash the execution.
+
+## CLI-Specific Autonomous Delegation (Antigravity CLI)
+To invoke a subagent autonomously, you MUST use the `invoke_subagent` tool or the `@<agent-name>` syntax in your prompt (e.g., `@code-reviewer please review the generated files`).
+To utilize a skill, ensure you refer to the skills configured under `.agents/skills/` (the platform automatically discovers them) or trigger them via slash commands like `/skills <skill-name>`.

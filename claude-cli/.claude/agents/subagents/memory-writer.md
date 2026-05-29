@@ -1,9 +1,8 @@
 ---
 name: memory-writer
 description: "Persists useful knowledge to the memory store autonomously after successful task execution. Writes concise, deduplicated entries directly to disk."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash
 model: sonnet
-mode: subagent
 ---
 # Memory Writer Agent
 

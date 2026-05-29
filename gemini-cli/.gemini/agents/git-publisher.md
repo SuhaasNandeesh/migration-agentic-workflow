@@ -3,9 +3,7 @@ name: git-publisher
 description: "Handles final code commit and push to a Git feature branch. Uses dry-run checks to ensure credentials exist before pushing."
 tools:
   - read_file
-  - write_file
   - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Git Publisher Agent

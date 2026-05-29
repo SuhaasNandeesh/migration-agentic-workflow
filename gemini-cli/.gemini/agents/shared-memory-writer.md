@@ -4,8 +4,7 @@ description: "Shared Memory Writer agent. Analyzes pipeline logs and surgical-fi
 tools:
   - read_file
   - write_file
-  - run_shell_command
-  - search_file_content
+  - replace
 model: inherit
 ---
 # Shared Memory Writer Agent

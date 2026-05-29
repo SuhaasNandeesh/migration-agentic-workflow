@@ -4,8 +4,9 @@ description: "Assembles all validated migration artifacts into a deployment-read
 tools:
   - read_file
   - write_file
+  - replace
   - run_shell_command
-  - search_file_content
+  - glob
 model: inherit
 ---
 # Packager Agent

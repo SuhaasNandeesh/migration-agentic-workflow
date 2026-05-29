@@ -4,8 +4,6 @@ description: "Stitches outputs from all documentation subagents into a cohesive,
 tools:
   - read_file
   - write_file
-  - run_shell_command
-  - search_file_content
 model: inherit
 ---
 # Doc Assembler Agent

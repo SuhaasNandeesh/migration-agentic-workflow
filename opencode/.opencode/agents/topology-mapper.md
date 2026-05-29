@@ -5,7 +5,6 @@ tools:
   read: true
   write: true
   bash: true
-temperature: 0.3
 ---
 # Topology Mapper Agent
 

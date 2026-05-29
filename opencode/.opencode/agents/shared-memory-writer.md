@@ -5,7 +5,6 @@ tools:
   read: true
   write: true
   edit: true
-temperature: 0.2
 ---
 # Shared Memory Writer Agent
 

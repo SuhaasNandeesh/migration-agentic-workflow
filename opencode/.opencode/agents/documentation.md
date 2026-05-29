@@ -7,7 +7,6 @@ tools:
   edit: true
   bash: true
   glob: true
-temperature: 0.3
 ---
 # Documentation Agent
 

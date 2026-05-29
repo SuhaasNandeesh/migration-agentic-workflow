@@ -6,7 +6,6 @@ tools:
   write: true
   edit: true
   bash: true
-temperature: 0.2
 ---
 # Memory Writer Agent
 

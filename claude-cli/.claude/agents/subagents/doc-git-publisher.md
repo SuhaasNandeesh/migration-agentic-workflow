@@ -1,9 +1,8 @@
 ---
 name: doc-git-publisher
 description: "Handles final commit and push of the compiled MkDocs documentation to a Git repository (e.g., a docs or gh-pages branch). Uses dry-run checks for safety."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Bash
 model: sonnet
-mode: subagent
 ---
 # Doc Git Publisher Agent
 

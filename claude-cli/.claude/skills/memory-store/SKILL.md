@@ -1,8 +1,6 @@
 ---
 name: memory-store
 description: "Provides persistent memory storage for the multi-agent system. Contains implementation docs, structured issue tracking, and execution traces in assets/."
-metadata:
-  version: "1.0"
 ---
 # Memory Store
 

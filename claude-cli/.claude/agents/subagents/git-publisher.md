@@ -1,9 +1,8 @@
 ---
 name: git-publisher
 description: "Handles final code commit and push to a Git feature branch. Uses dry-run checks to ensure credentials exist before pushing."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Bash
 model: sonnet
-mode: subagent
 ---
 # Git Publisher Agent
 

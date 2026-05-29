@@ -5,7 +5,6 @@ tools:
   read: true
   write: true
   grep: true
-temperature: 0.2
 ---
 # Flow Tracer Agent
 
@@ -16,7 +15,7 @@ You are the Flow Tracer. Your job is to read pipeline files and automation scrip
 2. Dynamically read the relevant categorized knowledge bases from `knowledge/` (e.g., `knowledge/cicd-patterns.md`) to map internal acronyms correctly.
 3. Analyze the workflow files (e.g., CI/CD configs, Makefiles, build scripts).
 3.5. **AST Stub Ingestion (Scale Protection):** If any pipeline helper script or code file in the current Wave is **>= 1,000 lines**, invoke the `ast-stubber` skill to generate a lightweight structural stub:
-    `python3 .agents/skills/ast-stubber/run.py --file <file_path> --stub --output DocumentationFactory/output/artifacts/stubs/<relative_path>`
+    `python3 .opencode/skills/ast-stubber/run.py --file <file_path> --stub --output DocumentationFactory/output/artifacts/stubs/<relative_path>`
     Analyze the stub file to trace stage functions and public parameters, preventing OOM memory faults.
 4. Map out the stages sequentially (e.g., Lint, Build, Test, Security Scan, Push, Deploy).
 5. Identify which environment variables or secrets are required at each stage (cross-reference with variable-extractor if necessary).

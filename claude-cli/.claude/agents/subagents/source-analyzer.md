@@ -3,7 +3,6 @@ name: source-analyzer
 description: "Scans and inventories any source codebase to discover all resources, services, configurations, and dependencies that need migration. Platform-agnostic — discovers what exists rather than looking for specific resources."
 tools: Read, Write, Bash, Glob, Grep
 model: sonnet
-mode: subagent
 ---
 # Source Analyzer Agent
 

@@ -1,9 +1,8 @@
 ---
 name: knowledge-compiler
 description: "Compiles raw reference materials into structured wiki entity pages, migration patterns, and gotcha documents. Optionally enriches with latest docs via MCP/fetch. Runs before the main pipeline to ensure compiled knowledge is available."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Glob, Grep, WebFetch, WebSearch
 model: sonnet
-mode: subagent
 ---
 # Knowledge Compiler Agent
 

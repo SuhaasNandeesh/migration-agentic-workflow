@@ -1,9 +1,8 @@
 ---
 name: evaluator
 description: "Measures migration completeness and quality. Tracks resource coverage, validation pass rates, security compliance, and identifies gaps in the migration."
-tools: Read, Write, Bash, Glob, Grep
+tools: Read, Write, Bash
 model: sonnet
-mode: subagent
 ---
 # Evaluator Agent
 
