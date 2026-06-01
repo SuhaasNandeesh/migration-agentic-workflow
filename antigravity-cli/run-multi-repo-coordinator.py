@@ -180,15 +180,28 @@ def run_repo_migration(repo_conf, global_config):
         print(f"[-] Syncing consolidated company patterns to local knowledge store...")
         shutil.copy(SHARED_KNOWLEDGE_FILE, local_company_patterns)
 
+    # 3.5 Copy source (AWS) repository to target output/source folder for sandbox-safe execution
+    target_source_dir = os.path.join(target_dir, "output", "source")
+    if os.path.exists(target_source_dir):
+        shutil.rmtree(target_source_dir)
+    
+    print(f"[-] Replicating AWS source code into sandbox-safe directory: {target_source_dir}")
+    # Ignore git and agent tooling folders to prevent duplicate sync loops and git pollution
+    ignore_patterns = shutil.ignore_patterns(
+        ".git", ".agents", ".claude", ".gemini", ".opencode", ".pi", 
+        "output", "DocumentationFactory", "node_modules"
+    )
+    shutil.copytree(source_dir, target_source_dir, ignore=ignore_patterns)
+
     # 4. Generate the local environment-aware migration configuration
     local_config_path = os.path.join(target_dir, "migration-config.json")
     local_config = {
         "source_platform": global_config.get("source_platform", "aws"),
         "target_platform": global_config.get("target_platform", "azure"),
         "source_paths": {
-            "terraform": os.path.join(source_dir, "terraform"),
-            "kubernetes": os.path.join(source_dir, "kubernetes"),
-            "pipelines": os.path.join(source_dir, "pipelines")
+            "terraform": "output/source/terraform" if os.path.exists(os.path.join(target_source_dir, "terraform")) else "output/source",
+            "kubernetes": "output/source/kubernetes" if os.path.exists(os.path.join(target_source_dir, "kubernetes")) else "output/source",
+            "pipelines": "output/source/pipelines" if os.path.exists(os.path.join(target_source_dir, "pipelines")) else "output/source"
         },
         "target_versions": global_config.get("target_versions", {}),
         "target_environments": environments,
