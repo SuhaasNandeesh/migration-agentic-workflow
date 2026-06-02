@@ -214,6 +214,8 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 - On retry: read the error details carefully and fix ONLY the reported issues
 - Write a comment at the top of each generated file indicating it was auto-migrated
 - Document ALL improvements in the output `improvements` array
+- **Dynamic Version Adherence:**
+  - Suppress all pre-trained static syntax habits or assumptions. You MUST generate code that conforms strictly to the tool versions specified in `migration-config.json`. Refer directly to the custom schemas and golden examples compiled in `.pi/wiki/` for those specific versions, shifting dynamically between legacy imperative scripts and modern declarative blocks as instructed by the compiled wiki.
 - **OIDC & Zero-Trust Authentication Fallback Integration:**
   - Default to OpenID Connect (OIDC) federated credentials in Azure RM and pipeline configurations.
   - Implement OIDC Fallback Support: If the target environment requires traditional Service Principals (static credentials), enable this via a configurable boolean variable (e.g. `use_oidc_auth = false`) rather than breaking the migration.
@@ -229,9 +231,11 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
   - Generate `providers.tf` pinning exact compiler constraints (`version = "= 3.116.0"`). Floating versions (e.g. `>= 3.0`) are forbidden.
 - **Mandatory Cost-Attribution Tagging:**
   - Every billable Azure resource block must include the mandatory tagging block containing exactly: `Environment` (e.g., `dev`/`test`/`prod`), `MigrationSource` (original AWS ARN or source resource identifier), `CostCenter` (configured in `migration-config.json` e.g., `CC-999-DEVOPS`), and `Orchestrator` (`Antigravity-Migration-Factory`).
+  - **Standard Propagation Invariant:** Any configuration attribute designated as a mandatory compliance standard (such as resource tagging, lifecycle rules like `prevent_destroy`, or diagnostic settings) MUST be applied recursively to all declared resource blocks in the module that support that attribute in their provider schema. You are strictly forbidden from only tagging parent resources while omitting tags on child/subsidiary blocks (e.g., parent profiles vs. subresources).
 - **Stateful Resource Import Generation:**
   - Identify stateful target components (Storage Accounts, Databases/SQL, CosmosDB, Container Registries, KeyVaults).
   - For each stateful component, generate a declarative `imports.tf` file containing standard `import {}` blocks mapping the source AWS identity/ARN to the target Azure fully qualified Resource ID. Include an toggle `enable_state_import` in `variables.tf` to control execution of these imports.
+  - **Dimensionality Index Alignment:** For any wrapper or meta-programming block that implements conditional loop indexing (such as `count` or `for_each` in Terraform import blocks, dynamic overlays, or loops), the target block it references MUST declare the identical index structure. You are strictly forbidden from generating an indexed reference (e.g., `resource.name[key]`) targeting a single-instance (scalar) resource block that lacks `count` or `for_each`.
 - **Azure Naming Compliance (Self-Check):** Azure enforces strict, per-resource naming rules (length, charset, global uniqueness) that `terraform validate` cannot catch — they only fail at apply time. After writing your category's files, self-check names by running the `azure-naming-validator` skill and fix any `error`-severity findings before returning:
   `python3 .pi/skills/azure-naming-validator/run.py --dir . --output output/artifacts/azure-naming-results.json`
   Key rules to bake in while generating: storage accounts are 3–24 lowercase alphanumerics and **globally unique**; Key Vault/ACR/Cosmos DB/flexible-servers/App Service are also globally unique (always add an org/env/region discriminator). The skill's `SKILL.md` has the full constraints table.

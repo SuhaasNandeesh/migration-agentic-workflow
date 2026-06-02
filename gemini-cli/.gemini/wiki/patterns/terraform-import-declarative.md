@@ -62,3 +62,5 @@ import {
 
 - **Target Stateful Only**: Generate imports exclusively for resources carrying persistent state (Databases, KeyVaults, Storage Accounts, CosmosDB, Container Registries). Do NOT generate imports for ephemeral network interfaces, NSG rules, or route tables.
 - **Onboarding Controls**: If local dry-runs are required without state binding, set `enable_state_import = false` inside `terraform.tfvars` and guard the `import` blocks using conditional files or instructions where appropriate.
+- **Dimensionality Index Alignment Constraint**: NEVER use a conditional `for_each` or `count` wrapper on an `import` block unless the target resource itself declares `count` or `for_each`. For single-instance resources (no count/for_each), the `import` block must be declared bare without any `for_each` loop.
+- **Legacy Fallback**: If the target Terraform version specified in `migration-config.json` is `< 1.5.0`, declarative `import` blocks are unsupported. In this case, DO NOT generate `imports.tf`. Instead, generate an `import-resources.sh` CLI shell script containing imperative `terraform import <address> <id>` commands to preserve compatibility.
