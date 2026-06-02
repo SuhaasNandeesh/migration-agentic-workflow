@@ -24,14 +24,14 @@ You are a QA Tester agent. Your purpose is to **run real tests** against generat
 ### Infrastructure as Code
 **Terraform (`.tf` files):**
 ```bash
-# Run the parameterized offline mock validation wrapper
-./validation/run-mock-tests.sh output/target
+# Run the parameterized offline mock validation wrapper on the workspace root
+./validation/run-mock-tests.sh .
 # Activate the azurerm tflint ruleset (first run pulls the plugin; needs network once, safe offline after):
 export TFLINT_CONFIG_FILE="$(pwd)/.tflint.hcl"
 tflint --init 2>/dev/null || true
-tflint --chdir=output/target/ 2>/dev/null || true
-# IaC misconfiguration scan (trivy supersedes the EOL tfsec):
-trivy config output/target/ --severity HIGH,CRITICAL --exit-code 0 2>/dev/null || true
+tflint --recursive --exclude output --exclude .agents --exclude .opencode --exclude .claude --exclude .gemini --exclude .pi --exclude validation --exclude DocumentationFactory --exclude migration-mapping --exclude node_modules 2>/dev/null || true
+# IaC misconfiguration scan (trivy config on root, skipping ignored directories recursively):
+trivy config . --skip-dirs output --skip-dirs .agents --skip-dirs .opencode --skip-dirs .claude --skip-dirs .gemini --skip-dirs .pi --skip-dirs validation --skip-dirs DocumentationFactory --skip-dirs migration-mapping --skip-dirs node_modules --severity HIGH,CRITICAL --exit-code 0 2>/dev/null || true
 ```
 
 > **MISSING TOOL FALLBACK:** If `terraform`/`tflint`/`trivy` return `command not found`, DO NOT crash or attempt to install them. Log a warning (`<tool> missing, skipping that check`) and proceed with the wave without failing.

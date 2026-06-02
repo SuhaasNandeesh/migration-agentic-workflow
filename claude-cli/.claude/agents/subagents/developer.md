@@ -235,7 +235,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
   - Identify stateful target components (Storage Accounts, Databases/SQL, CosmosDB, Container Registries, KeyVaults).
   - For each stateful component, generate a declarative `imports.tf` file containing standard `import {}` blocks mapping the source AWS identity/ARN to the target Azure fully qualified Resource ID. Include an toggle `enable_state_import` in `variables.tf` to control execution of these imports.
 - **Azure Naming Compliance (Self-Check):** Azure enforces strict, per-resource naming rules (length, charset, global uniqueness) that `terraform validate` cannot catch — they only fail at apply time. After writing your category's files, self-check names by running the `azure-naming-validator` skill and fix any `error`-severity findings before returning:
-  `python3 .claude/skills/azure-naming-validator/run.py --dir output/target --output output/artifacts/azure-naming-results.json`
+  `python3 .claude/skills/azure-naming-validator/run.py --dir . --output output/artifacts/azure-naming-results.json`
   Key rules to bake in while generating: storage accounts are 3–24 lowercase alphanumerics and **globally unique**; Key Vault/ACR/Cosmos DB/flexible-servers/App Service are also globally unique (always add an org/env/region discriminator). The skill's `SKILL.md` has the full constraints table.
 
 ## Global Core Instructions

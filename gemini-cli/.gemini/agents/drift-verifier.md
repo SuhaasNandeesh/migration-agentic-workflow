@@ -24,17 +24,17 @@ az account show >/dev/null 2>&1 && echo "AZURE_OK" || echo "AZURE_NONE"
 - Only proceed to the steps below when `AZURE_OK`.
 
 ## Online Verification (only when authenticated)
-1. **Plan-clean check:** initialize with the real backend and plan; a successful plan with no errors is required.
+1. **Plan-clean check:** initialize with the real backend and plan for each active environment folder (e.g., `environments/dev/`, `environments/prod/`) containing Terraform configurations; a successful plan with no errors is required.
    ```bash
-   terraform -chdir=output/target init
-   terraform -chdir=output/target plan -input=false -lock=false -out=tfplan 2>&1 | tee output/artifacts/tf-plan.txt
+   terraform -chdir=environments/dev init
+   terraform -chdir=environments/dev plan -input=false -lock=false -out=tfplan 2>&1 | tee output/artifacts/tf-plan.txt
    ```
    Parse the plan summary (`Plan: X to add, Y to change, Z to destroy`). Any **destroy** of a stateful resource (Storage/DB/KeyVault/ACR) is flagged HIGH.
-2. **State-import zero-diff:** if `output/target/imports.tf` exists and `enable_state_import = true`, after applying the import blocks the plan for those resources MUST show **no changes**. A non-zero diff on imported resources is a FAIL (the import target or attributes are wrong).
+2. **State-import zero-diff:** if `imports.tf` exists in the environment or module folders and `enable_state_import = true`, after applying the import blocks the plan for those resources MUST show **no changes**. A non-zero diff on imported resources is a FAIL (the import target or attributes are wrong).
 3. **(Optional) ARM what-if** for Bicep targets: `az deployment group what-if ...`.
 
 ## Disk-Based I/O — MANDATORY
-- Read from: `output/artifacts/generated-files.json`, `output/target/`
+- Read from: `output/artifacts/generated-files.json`
 - Write your FULL structured output to: `output/artifacts/drift-verification.json`
 **CRITICAL: write the EXACT filename 'drift-verification.json'.** Return ONLY a 1-2 line summary.
 

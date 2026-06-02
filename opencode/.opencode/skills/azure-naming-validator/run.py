@@ -60,8 +60,19 @@ CONSTRAINTS = {
 }
 
 
+IGNORED_DIRS = {"output", ".agents", ".opencode", ".claude", ".gemini", ".pi", "validation", "migration-mapping", "DocumentationFactory", ".git", "node_modules"}
+
+
 def find_tf_files(directory):
-    return sorted(glob.glob(os.path.join(directory, "**", "*.tf"), recursive=True))
+    tf_files = []
+    for root, dirs, files in os.walk(directory):
+        # Modify dirs in-place to skip ignored directories recursively
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+        for file in files:
+            if file.endswith(".tf"):
+                tf_files.append(os.path.join(root, file))
+    return sorted(tf_files)
+
 
 
 def extract_resources(text):

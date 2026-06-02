@@ -7,7 +7,7 @@
 
 set -eo pipefail
 
-TARGET_DIR="${1:-output/target}"
+TARGET_DIR="${1:-.}"
 TEST_FILE="${TARGET_DIR}/validation.tftest.hcl"
 RESULT_FILE="output/artifacts/test-results.json"
 

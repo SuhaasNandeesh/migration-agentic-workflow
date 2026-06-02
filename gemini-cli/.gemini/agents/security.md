@@ -44,13 +44,13 @@ For the target platform, you MUST verify the code using actual CLI tools. Do not
 # (First run pulls the plugin and needs network; safe to ignore if cached/offline.)
 export TFLINT_CONFIG_FILE="$(pwd)/.tflint.hcl"
 tflint --init 2>/dev/null || true
-checkov -d output/target/ --quiet --compact
-tflint --chdir=output/target/
+checkov -d . --skip-path output --skip-path .agents --skip-path .opencode --skip-path .claude --skip-path .gemini --skip-path .pi --skip-path validation --skip-path DocumentationFactory --skip-path migration-mapping --skip-path node_modules --quiet --compact
+tflint --recursive --exclude output --exclude .agents --exclude .opencode --exclude .claude --exclude .gemini --exclude .pi --exclude validation --exclude DocumentationFactory --exclude migration-mapping --exclude node_modules
 # Trivy is the modern, maintained scanner (tfsec is EOL/merged into Trivy):
-trivy config output/target/ --severity HIGH,CRITICAL --exit-code 0
+trivy config . --skip-dirs output --skip-dirs .agents --skip-dirs .opencode --skip-dirs .claude --skip-dirs .gemini --skip-dirs .pi --skip-dirs validation --skip-dirs DocumentationFactory --skip-dirs migration-mapping --skip-dirs node_modules --severity HIGH,CRITICAL --exit-code 0
 # tfsec retained only as a legacy fallback if trivy is unavailable:
-tfsec output/target/ 2>/dev/null || true
-
+tfsec . --exclude output,.agents,.opencode,.claude,.gemini,.pi,validation,DocumentationFactory,migration-mapping,node_modules 2>/dev/null || true
+```
 > **MISSING TOOL FALLBACK:** If any of the above CLI tools return `command not found`, DO NOT crash or attempt to install them. Simply log a warning (e.g. `trivy/checkov not installed, falling back to LLM review`) and perform a manual security review of the code yourself based on your training.
 ```
 If either tool fails or throws critical errors regarding:
@@ -73,8 +73,8 @@ Then you MUST FAIL the security gate and provide the CLI output back to the surg
 
 Run deterministic scans where available (kubeconform only checks schema, so add security/best-practice linting):
 ```bash
-kube-linter lint output/target/ 2>/dev/null || true   # privileged, missing resource limits, hostPath, runAsNonRoot
-trivy config output/target/ --severity HIGH,CRITICAL --exit-code 0 2>/dev/null || true  # Dockerfile + K8s misconfig
+kube-linter lint . --exclude output --exclude .agents --exclude .opencode --exclude .claude --exclude .gemini --exclude .pi --exclude validation --exclude DocumentationFactory --exclude migration-mapping --exclude node_modules 2>/dev/null || true   # privileged, missing resource limits, hostPath, runAsNonRoot
+trivy config . --skip-dirs output --skip-dirs .agents --skip-dirs .opencode --skip-dirs .claude --skip-dirs .gemini --skip-dirs .pi --skip-dirs validation --skip-dirs DocumentationFactory --skip-dirs migration-mapping --skip-dirs node_modules --severity HIGH,CRITICAL --exit-code 0 2>/dev/null || true  # Dockerfile + K8s misconfig
 # If a container IMAGE is being migrated (e.g. ECR -> ACR), scan it directly:
 # trivy image <registry>/<image>:<tag> --severity HIGH,CRITICAL
 ```
@@ -139,7 +139,7 @@ After the security audit, generate enforceable policies:
 After generating OPA/Rego policies, validate the target against them deterministically where possible:
 ```bash
 # Evaluate generated Rego policies against the target IaC / plan JSON:
-conftest test output/target/ --policy output/policies/opa/ 2>/dev/null || true
+conftest test . --policy output/policies/opa/ --exclude output --exclude .agents --exclude .opencode --exclude .claude --exclude .gemini --exclude .pi --exclude validation --exclude DocumentationFactory --exclude migration-mapping --exclude node_modules 2>/dev/null || true
 # (or, for raw policy syntax) opa check output/policies/opa/ 2>/dev/null || true
 ```
 > If `conftest`/`opa` are not installed, log a WARNING and rely on `checkov`/`trivy` plus manual policy review.

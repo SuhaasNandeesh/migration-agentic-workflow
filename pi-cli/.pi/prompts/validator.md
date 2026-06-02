@@ -70,7 +70,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 - Capture and parse output
 - Fail if exit code != 0
 - **Azure naming compliance (deterministic, offline):** run the `azure-naming-validator` skill and treat any `error`-severity finding as a BLOCKING violation (these only fail at apply time otherwise):
-  `python3 .pi/skills/azure-naming-validator/run.py --dir output/target --output output/artifacts/azure-naming-results.json`
+  `python3 .pi/skills/azure-naming-validator/run.py --dir . --output output/artifacts/azure-naming-results.json`
 
 **For Pipelines:**
 - Run `tool-executor/scripts/pipeline_linter.sh`
