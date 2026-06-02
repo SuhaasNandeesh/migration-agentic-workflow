@@ -12,7 +12,7 @@ frequent apply-time failure:
 - Strip hyphens/underscores when deriving from an S3 bucket name.
 - Always include an org/env discriminator so the global-uniqueness constraint is met.
 - Validate offline before apply:
-  `python3 .opencode/skills/azure-naming-validator/run.py --dir output/target --output output/artifacts/azure-naming-results.json`
+  `python3 .opencode/skills/azure-naming-validator/run.py --dir . --output output/artifacts/azure-naming-results.json`
 
 Container/blob names CAN have hyphens — only the **account** name is restricted.
 The same "globally unique, restricted charset" class also applies to Key Vault,

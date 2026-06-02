@@ -10,8 +10,8 @@ resources against those rules entirely offline (no cloud credentials needed),
 so the developer/validator can fix them before deployment.
 
 Usage:
-    # Scan a directory of generated Terraform (default: output/target)
-    python3 run.py --dir output/target --output output/artifacts/azure-naming-results.json
+    # Scan a directory of generated Terraform (default: .)
+    python3 run.py --dir . --output output/artifacts/azure-naming-results.json
 
     # Validate a single literal name for a given resource type (quick check)
     python3 run.py --check azurerm_storage_account --name "myprodstorage01"
@@ -153,7 +153,7 @@ def validate_name(rtype, rhs):
 
 def main():
     ap = argparse.ArgumentParser(description="Validate Azure resource names offline.")
-    ap.add_argument("--dir", default="output/target", help="directory of generated Terraform to scan")
+    ap.add_argument("--dir", default=".", help="directory of generated Terraform to scan")
     ap.add_argument("--output", help="write JSON results to this path (also prints summary)")
     ap.add_argument("--check", help="validate a single resource type (with --name)")
     ap.add_argument("--name", help="literal name to validate against --check type")

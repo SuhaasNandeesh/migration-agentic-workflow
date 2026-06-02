@@ -25,7 +25,7 @@ stages:
         steps:
           - task: TerraformInstaller@1
             inputs: { terraformVersion: 'latest' }
-          - script: terraform -chdir=output/target init -backend=false && terraform -chdir=output/target validate
+          - script: terraform init -backend=false && terraform validate
             displayName: 'Terraform validate'
   - stage: Deploy
     dependsOn: Build

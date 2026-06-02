@@ -15,7 +15,7 @@ the gate loop instead of in production.
 ```bash
 # Scan generated Terraform and write a JSON report (exit code 1 if any error):
 python3 .opencode/skills/azure-naming-validator/run.py \
-  --dir output/target \
+  --dir . \
   --output output/artifacts/azure-naming-results.json
 
 # Quick single-name check:

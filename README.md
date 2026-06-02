@@ -325,7 +325,7 @@ Follow this step-by-step process to perform a manual cross-model peer review and
    cd claude-cli
    claude
    ```
-3. Wait for the supervisor to complete the wave loops. The final Azure HCL code will be written to `claude-cli/output/target/`.
+3. Wait for the supervisor to complete the wave loops. The final Azure HCL code will be written directly to the root of the target repository (e.g., `environments/`, `modules/`, `imports/`).
 
 ---
 
@@ -338,16 +338,16 @@ By reviewing Claude's output with Gemini (or vice versa), you catch subtle API s
    ```
 2. Copy the generated files and the source inventory metadata from the primary sandbox into the secondary review sandbox:
    ```bash
-   # Create outputs folders
-   mkdir -p output/target output/artifacts
+   # Create outputs folder
+   mkdir -p output/artifacts
    
-   # Sync the generated code and source census
-   cp -r ../claude-cli/output/target/* output/target/
+   # Copy the generated environments/modules/imports and the source census
+   cp -r ../claude-cli/environments/ ../claude-cli/modules/ ../claude-cli/imports/ . 2>/dev/null || true
    cp ../claude-cli/output/artifacts/source-inventory.json output/artifacts/source-inventory.json
    ```
 3. Run the peer-review command:
    ```bash
-   antigravity -p "Perform an independent, rigorous architectural and security code review on the Azure resource configurations generated under 'output/target/'. Check them against the source AWS inventory at 'output/artifacts/source-inventory.json'. Explicitly flag: 1. Hallucinations or missing dependencies, 2. SKU/sizing bounds violations, 3. Tagging or compliance drifts."
+   antigravity -p "Perform an independent, rigorous architectural and security code review on the Azure resource configurations generated under the root directory. Check them against the source AWS inventory at 'output/artifacts/source-inventory.json'. Explicitly flag: 1. Hallucinations or missing dependencies, 2. SKU/sizing bounds violations, 3. Tagging or compliance drifts."
    ```
 4. The Gemini/Antigravity review report will be output directly in your console and saved under `output/artifacts/code-review-results.json` for analysis.
 
@@ -376,7 +376,7 @@ Run offline unit tests to check syntax, schemas, and FinOps standards using HCL 
 
 1. Execute the mock test wrapper against the generated target:
    ```bash
-   ./validation/run-mock-tests.sh output/target
+   ./validation/run-mock-tests.sh .
    ```
 2. Inspect the test-run scorecard:
    ```bash
