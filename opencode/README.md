@@ -185,7 +185,8 @@ output/
 │   ├── generated-files.json     ← File manifest
 │   └── ...
 ├── pipeline-state.json           ← Resume checkpoint
-├── pipeline-log.md               ← Human-readable execution log
+└── pipeline-log.md               ← Human-readable execution log
+```
 
 ## Prerequisites
 To get the most out of the determinism in this factory, install the following CLI tools. If they are not installed, the agents will **gracefully degrade** to LLM-based reasoning:
@@ -194,16 +195,18 @@ To get the most out of the determinism in this factory, install the following CL
 - **Python Skills:** `python3` (run `pip install -r .opencode/skills/requirements.txt`)
 
 ## Execution Workflow
-├── Terraform_Modules-Azure/      ← Generated target code
-│   ├── environments/
-│   │   ├── development/
-│   │   ├── staging/
-│   │   └── production/
-│   └── modules/
-│       ├── resource_group/
-│       ├── networking/
-│       ├── compute/
-│       └── ...
+Under the root of the target directory, the production code is structured natively into environments and modules:
+```
+.
+├── environments/
+│   ├── development/
+│   ├── staging/
+│   └── production/
+├── modules/
+│   ├── resource_group/
+│   ├── networking/
+│   ├── compute/
+│   └── ...
 └── docs/                         ← Generated documentation
     ├── migration-runbook.md
     ├── architecture-decisions/
