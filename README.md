@@ -383,3 +383,43 @@ Run offline unit tests to check syntax, schemas, and FinOps standards using HCL 
    cat output/artifacts/test-results.json
    ```
    *This validates that all files format cleanly, compile natively under `terraform validate`, and conform to mandatory sizing limitations (burstable VMs) and tags (`CostCenter`, `Orchestrator`).*
+
+---
+
+## 8. Git Repository Architecture & Manual Wave Publishing
+
+During execution, the Migration Framework establishes a **sandbox-safe nested Git repository architecture** to isolate migration artifacts and prevent polluting your target repository's default working branch. 
+
+### Twin-Repository Design
+1. **The Parent Target Repository (`/target_dir/`)**:
+   * This is your main enterprise repository checkout.
+   * To keep your target codebase clean, the Multi-Repo Coordinator programmatically configures the parent repository's `.gitignore` to ignore the orchestration and output folders (such as `output/`, `DocumentationFactory/`, `.agents/`, etc.).
+   * **Note**: Running `git push` or `git commit` from the root of the parent repository will **not** stage, track, or push your generated migration files due to these ignore rules.
+2. **The Nested Repository (`/target_dir/output/`)**:
+   * To enable precise AST tracking, dry-run diffs, and local retry-remediation, the `Supervisor` automatically initializes a completely independent Git repository inside the `output/` directory (`git init`).
+   * As the supervisor successfully completes each migration category or wave, it automatically runs local Git commits inside the `output/` subdirectory.
+
+### How to Manually Push Wave Commits
+Because the nested Git repository inside `output/` is initialized locally, it does **not** have a remote destination (`origin`) configured. Running `git push` directly inside `output/` will initially fail with a `No configured push destination` error.
+
+If you want to manually push successful wave commits to GitHub/GitLab before the entire pipeline finishes, follow these steps:
+
+1. **Navigate to the nested Git repository**:
+   ```bash
+   cd output/
+   ```
+2. **Configure your target remote destination**:
+   ```bash
+   git remote add origin <your-target-repo-git-url>
+   ```
+3. **Verify/checkout your active migration branch**:
+   ```bash
+   git checkout -b ai-migration/azure-update
+   ```
+4. **Push the wave commits**:
+   ```bash
+   git push -u origin HEAD
+   ```
+
+Subsequent wave commits created by the supervisor can then be pushed manually at any time using a simple `cd output/ && git push`.
+
