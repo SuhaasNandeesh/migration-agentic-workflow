@@ -27,7 +27,7 @@ After the developer generates target code, you estimate what it will cost to dep
 ### Option A: Infracost (Preferred)
 If `infracost` is installed:
 ```bash
-infracost breakdown --path output/Terraform_Modules-Azure/environments/production/ --format json > output/artifacts/cost-estimate.json
+infracost breakdown --path . --format json > output/artifacts/cost-estimate.json
 ```
 
 ### Option B: Manual Estimation (Fallback)

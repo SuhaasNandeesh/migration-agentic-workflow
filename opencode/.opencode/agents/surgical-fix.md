@@ -63,11 +63,11 @@ After making fixes, you MUST write `output/artifacts/retry-manifest.json`:
   "retry_number": 1,
   "gate_that_failed": "code-reviewer",
   "files_modified": [
-    "output/Terraform_Modules-Azure/modules/network/main.tf"
+    "modules/network/main.tf"
   ],
   "changes_made": [
     {
-      "file": "output/Terraform_Modules-Azure/modules/network/main.tf",
+      "file": "modules/network/main.tf",
       "line": 45,
       "issue": "Missing NSG egress rule for HTTPS",
       "fix": "Added security_rule block for port 443 outbound",

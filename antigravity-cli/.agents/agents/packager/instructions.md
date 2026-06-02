@@ -120,14 +120,14 @@ echo "Creating PRs for Migration..."
 
 # Wave 0
 git checkout -b migration/wave-0-1713800000 main
-git add output/Terraform_Modules-Azure/modules/foundation/
+git add modules/foundation/
 git commit -m "feat: Wave 0 - Foundation"
 git push origin migration/wave-0-1713800000
 gh pr create --title "Migration Wave 0: Foundation" --body "$(cat output/artifacts/pr-wave-0-foundation.json)" --base main
 
 # Wave 1 (Depends on Wave 0)
 git checkout -b migration/wave-1-1713800000 migration/wave-0-1713800000
-git add output/Terraform_Modules-Azure/modules/networking/
+git add modules/networking/
 git commit -m "feat: Wave 1 - Networking"
 git push origin migration/wave-1-1713800000
 gh pr create --title "Migration Wave 1: Networking" --body "$(cat output/artifacts/pr-wave-1-networking.json)" --base migration/wave-0-1713800000
