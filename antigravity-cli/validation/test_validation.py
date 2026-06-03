@@ -132,6 +132,15 @@ index 515867b..c1fb4b6 100644
 +module "network" {
 +  source = "./modules/network"
 +}
+diff --git a/kubernetes/deployment.yaml b/kubernetes/deployment.yaml
+--- a/kubernetes/deployment.yaml
++++ b/kubernetes/deployment.yaml
+-kind: Service
+-metadata:
+-  name: old-service
++kind: Deployment
++metadata:
++  name: new-deployment
 """
     diff_path = os.path.join(TEMP_TEST_DIR, "mock.diff")
     with open(diff_path, 'w') as f:
@@ -160,6 +169,9 @@ index 515867b..c1fb4b6 100644
     assert "module `network`" in summary_content
     assert "property `size`" in summary_content
     assert "property `tags`" in summary_content
+    assert "Kubernetes resource `Deployment.new-deployment`" in summary_content
+    assert "Kubernetes resource `Service.old-service`" in summary_content
+
 
     print("[✅] Resource Delta Analyzer successfully parsed the diff and extracted changes!")
 

@@ -3,28 +3,201 @@ import sys
 import argparse
 import re
 import logging
-import subprocess
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# Attempt to load tree-sitter bindings; auto-install if missing (mirroring dep-graph-builder)
+# Attempt to load tree-sitter bindings
 try:
     import tree_sitter
     import tree_sitter_hcl
+    import tree_sitter_python
+    import tree_sitter_yaml
+    import tree_sitter_go
+    import tree_sitter_javascript
     TREE_SITTER_AVAILABLE = True
 except ImportError:
+    TREE_SITTER_AVAILABLE = False
+    logging.warning("Tree-sitter libraries or grammar bindings are missing. Please run './install-dev-tools.sh' to install required dependencies. Falling back to regex folding.")
+
+# Global cache for compiled tree-sitter grammars
+GRAMMARS = {}
+
+def get_grammar(lang_name):
+    """Dynamically loads tree-sitter grammars as needed, returning None on failure"""
+    if lang_name in GRAMMARS:
+        return GRAMMARS[lang_name]
+        
     try:
-        req_path = os.path.join(os.path.dirname(__file__), "..", "requirements.txt")
-        if os.path.exists(req_path):
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            import tree_sitter
+        from tree_sitter import Language
+        if lang_name == "hcl":
             import tree_sitter_hcl
-            TREE_SITTER_AVAILABLE = True
+            lang = Language(tree_sitter_hcl.language())
+        elif lang_name == "python":
+            import tree_sitter_python
+            lang = Language(tree_sitter_python.language())
+        elif lang_name == "yaml":
+            import tree_sitter_yaml
+            lang = Language(tree_sitter_yaml.language())
+        elif lang_name == "go":
+            import tree_sitter_go
+            lang = Language(tree_sitter_go.language())
+        elif lang_name == "javascript":
+            import tree_sitter_javascript
+            lang = Language(tree_sitter_javascript.language())
         else:
-            TREE_SITTER_AVAILABLE = False
-    except Exception:
-        TREE_SITTER_AVAILABLE = False
+            lang = None
+            
+        GRAMMARS[lang_name] = lang
+        return lang
+    except Exception as e:
+        logging.warning(f"Failed to load tree-sitter grammar for '{lang_name}': {e}.")
+        GRAMMARS[lang_name] = None
+        return None
+
+def get_braces_span(node):
+    # Find all descendants that are "{" and "}"
+    braces = []
+    def collect(n):
+        if n.type in ("{", "}"):
+            braces.append(n)
+        for child in n.children:
+            collect(child)
+            
+    collect(node)
+    
+    first_open = None
+    last_close = None
+    for b in braces:
+        if b.type == "{" and first_open is None:
+            first_open = b
+        elif b.type == "}":
+            last_close = b
+            
+    if first_open and last_close and first_open.end_byte <= last_close.start_byte:
+        return first_open.end_byte, last_close.start_byte
+    return None
+
+def fold_with_treesitter(content: str, ext: str) -> str:
+    """
+    Parses content using tree-sitter and returns a structurally folded string.
+    Supports HCL, Python, Go, JS/TS, and YAML natively.
+    """
+    # Map file extension to grammar language
+    ext_map = {
+        ".tf": "hcl",
+        ".py": "python",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".go": "go",
+        ".js": "javascript",
+        ".ts": "javascript"
+    }
+    
+    lang_name = ext_map.get(ext)
+    if not lang_name:
+        raise ValueError(f"No grammar mapping for extension: {ext}")
+        
+    grammar = get_grammar(lang_name)
+    if not grammar:
+        raise RuntimeError(f"Grammar loading failed or not installed for language: {lang_name}")
+        
+    from tree_sitter import Parser
+    parser = Parser(grammar)
+    
+    tree = parser.parse(content.encode('utf-8'))
+    
+    candidates = []
+    
+    def traverse(node):
+        # 1. HCL block
+        if lang_name == "hcl" and node.type == "block":
+            span = get_braces_span(node)
+            if span:
+                start, end = span
+                body_text = content[start:end]
+                line_count = body_text.count('\n')
+                if line_count > 5:
+                    start_line = content.count('\n', 0, start) + 1
+                    end_line = content.count('\n', 0, end) + 1
+                    candidates.append((start, end, "hcl_block", start_line, end_line))
+                    return
+        # 2. Python class or function block
+        elif lang_name == "python" and node.type in ("class_definition", "function_definition"):
+            block_child = None
+            for child in node.children:
+                if child.type == "block":
+                    block_child = child
+                    break
+            if block_child:
+                body_text = content[block_child.start_byte:block_child.end_byte]
+                line_count = body_text.count('\n')
+                if line_count > 6:
+                    start_line = content.count('\n', 0, block_child.start_byte) + 1
+                    end_line = content.count('\n', 0, block_child.end_byte) + 1
+                    candidates.append((block_child.start_byte, block_child.end_byte, "python_block", start_line, end_line))
+                    return
+        # 3. Go or Javascript brace-based block (functions/classes)
+        elif lang_name in ("go", "javascript") and node.type in (
+            "function_declaration", "method_declaration", "method_definition", "class_declaration", "arrow_function"
+        ):
+            span = get_braces_span(node)
+            if span:
+                start, end = span
+                body_text = content[start:end]
+                line_count = body_text.count('\n')
+                if line_count > 6:
+                    start_line = content.count('\n', 0, start) + 1
+                    end_line = content.count('\n', 0, end) + 1
+                    candidates.append((start, end, "brace_block", start_line, end_line))
+                    return
+        # 4. YAML mapping or sequence block
+        elif lang_name == "yaml" and node.type in ("block_mapping", "block_sequence"):
+            body_text = content[node.start_byte:node.end_byte]
+            line_count = body_text.count('\n')
+            if line_count > 5:
+                if node.parent and node.parent.type == "block_mapping_pair":
+                    start_line = content.count('\n', 0, node.start_byte) + 1
+                    end_line = content.count('\n', 0, node.end_byte) + 1
+                    candidates.append((node.start_byte, node.end_byte, "yaml_block", start_line, end_line))
+                    return
+                    
+        for child in node.children:
+            traverse(child)
+            
+    traverse(tree.root_node)
+    
+    candidates.sort(key=lambda x: x[0])
+    active_ranges = []
+    current_end = -1
+    for start, end, node_type, s_line, e_line in candidates:
+        if start >= current_end:
+            active_ranges.append((start, end, node_type, s_line, e_line))
+            current_end = end
+            
+    active_ranges.sort(key=lambda x: x[0], reverse=True)
+    
+    result = content
+    for start, end, node_type, s_line, e_line in active_ranges:
+        line_count = e_line - s_line + 1
+        line_start = content.rfind('\n', 0, start) + 1
+        indent = ""
+        m_indent = re.match(r'^([ \t]*)', content[line_start:])
+        if m_indent:
+            indent = m_indent.group(1)
+            
+        if node_type == "python_block":
+            placeholder = f"\n{indent}pass # ... [Folded Python Block: lines {s_line}-{e_line} - {line_count} lines folded for context protection]\n"
+        elif node_type == "hcl_block":
+            placeholder = f"\n{indent}  # ... [Folded Block: lines {s_line}-{e_line} - {line_count} lines folded for context protection]\n{indent}"
+        elif node_type == "yaml_block":
+            placeholder = f"\n{indent}  # ... [Folded YAML Block: lines {s_line}-{e_line} - {line_count} lines folded for context protection]\n"
+        else:
+            placeholder = f"\n{indent}  // ... [Folded Block: lines {s_line}-{e_line} - {line_count} lines folded for context protection]\n{indent}"
+            
+        result = result[:start] + placeholder + result[end:]
+        
+    return result
 
 def fold_hcl_brackets(content: str) -> str:
     """
@@ -36,18 +209,11 @@ def fold_hcl_brackets(content: str) -> str:
     i = 0
     total_lines = len(lines)
     
-    # Matches patterns like: resource "aws_instance" "web" {
-    # or: variable "name" {
-    # or: module "vpc" {
     block_header_re = re.compile(r'^\s*(resource|module|variable|output|data|locals|terraform|provider)\b')
 
     while i < total_lines:
         line = lines[i]
-        stripped = line.strip()
-        
-        # Check if line starts a major block
         if block_header_re.match(line) and '{' in line:
-            # We found a block start. Let's find its matching closing brace
             header = line.split('{')[0] + '{'
             brace_count = 1
             start_index = i
@@ -62,14 +228,12 @@ def fold_hcl_brackets(content: str) -> str:
                     block_body_lines.append(body_line)
                 j += 1
             
-            # If successfully found matching closing brace and block is large
             if brace_count == 0 and len(block_body_lines) > 5:
                 folded_lines.append(header)
                 folded_lines.append(f"  # ... [Folded Block: lines {start_index+2}-{j} - {len(block_body_lines)} lines folded for context protection]")
                 folded_lines.append("}")
                 i = j - 1
             else:
-                # Small block or unmatched brace, do not fold
                 folded_lines.append(line)
         else:
             folded_lines.append(line)
@@ -79,7 +243,7 @@ def fold_hcl_brackets(content: str) -> str:
 
 def fold_python_indentation(content: str) -> str:
     """
-    Folds Python files by tracking def/class indentations.
+    Folds Python/YAML files by tracking def/class/key indentations.
     """
     lines = content.splitlines()
     folded_lines = []
@@ -90,8 +254,7 @@ def fold_python_indentation(content: str) -> str:
         line = lines[i]
         stripped = line.strip()
         
-        # Match class or function definitions
-        if (stripped.startswith("def ") or stripped.startswith("class ")) and line.endswith(":"):
+        if stripped.endswith(":") and not stripped.startswith("#") and not stripped.startswith("//"):
             header = line
             indent = len(line) - len(line.lstrip())
             folded_lines.append(header)
@@ -111,11 +274,9 @@ def fold_python_indentation(content: str) -> str:
                 j += 1
                 
             if len(body_lines) > 6:
-                # Fold the body
-                folded_lines.append(" " * (indent + 4) + f"# ... [Folded Python Block: lines {i+2}-{j} - {len(body_lines)} lines folded for context protection]")
+                folded_lines.append(" " * (indent + 4) + f"# ... [Folded Block: lines {i+2}-{j} - {len(body_lines)} lines folded for context protection]")
                 i = j - 1
             else:
-                # Do not fold small blocks
                 folded_lines.extend(body_lines)
                 i = j - 1
         else:
@@ -134,16 +295,25 @@ def generate_stub(file_path: str, output_path: str):
         content = f.read()
         
     ext = os.path.splitext(file_path)[1].lower()
+    folded_content = None
     
-    if ext == ".tf":
-        folded_content = fold_hcl_brackets(content)
-    elif ext == ".py":
-        folded_content = fold_python_indentation(content)
-    else:
-        # Generic folding (brackets fallback)
-        folded_content = fold_hcl_brackets(content)
-        
-    # Write header comment indicating it is an AST structural stub
+    # 1. Try Tree-sitter folding with full DevOps scope
+    if TREE_SITTER_AVAILABLE:
+        try:
+            folded_content = fold_with_treesitter(content, ext)
+            logging.info("Successfully generated stub using tree-sitter AST parser.")
+        except Exception as e:
+            logging.warning(f"Tree-sitter folding failed for {file_path}: {e}. Falling back to text-based folding.")
+            
+    # 2. Resilient Text-based Fallbacks if Tree-sitter is missing or fails
+    if folded_content is None:
+        if ext in (".py", ".yaml", ".yml"):
+            folded_content = fold_python_indentation(content)
+        elif ext in (".tf", ".hcl"):
+            folded_content = fold_hcl_brackets(content)
+        else:
+            folded_content = fold_hcl_brackets(content)
+            
     stub_header = f"# AST STRUCTURAL STUB FILE\n# Generated from original: {file_path}\n# DO NOT modify this stub file directly. Use '--hydrate' to read raw sections.\n\n"
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -161,13 +331,11 @@ def hydrate_by_range(file_path: str, start_line: int, end_line: int):
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
         
-    # Standardize to 0-indexed bounds checking
     start_idx = max(0, start_line - 1)
     end_idx = min(len(lines), end_line)
     
     snippet = "".join(lines[start_idx:end_idx])
     
-    # Output raw snippet to stdout
     print(f"\n--- HYDRATION BOUNDARY: LINES {start_line}-{end_line} ---")
     sys.stdout.write(snippet)
     print("--- END HYDRATION BOUNDARY ---\n")
@@ -181,8 +349,6 @@ def hydrate_by_block_name(file_path: str, block_name: str):
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
         
-    # Search for matching block signature (e.g. resource "aws_instance" "web", or module "vpc")
-    # Clean symbol spaces for fuzzy matching
     clean_target = block_name.replace('"', '').replace("'", "").replace(" ", "")
     
     lines = content.splitlines()
@@ -195,7 +361,6 @@ def hydrate_by_block_name(file_path: str, block_name: str):
         clean_line = line.replace('"', '').replace("'", "").replace(" ", "")
         
         if clean_target in clean_line and '{' in line:
-            # Found block signature block start. Let's capture the whole block.
             start_line = i + 1
             brace_count = 1
             j = i + 1
@@ -211,7 +376,6 @@ def hydrate_by_block_name(file_path: str, block_name: str):
             break
             
         elif (line.strip().startswith("def ") or line.strip().startswith("class ")) and block_name in line:
-            # Python class or function start
             start_line = i + 1
             indent = len(line) - len(line.lstrip())
             j = i + 1

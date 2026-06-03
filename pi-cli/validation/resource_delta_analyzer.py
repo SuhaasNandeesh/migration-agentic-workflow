@@ -17,6 +17,8 @@ import re
 def analyze_diff(diff_content):
     file_deltas = {}
     current_file = None
+    last_added_kind = None
+    last_deleted_kind = None
 
     # Regex definitions for IaC (Terraform) and Kubernetes elements
     tf_resource_re = re.compile(r'^\s*resource\s+"([^"]+)"\s+"([^"]+)"')
@@ -29,6 +31,8 @@ def analyze_diff(diff_content):
     for line in lines:
         if line.startswith('diff --git'):
             current_file = None
+            last_added_kind = None
+            last_deleted_kind = None
         elif line.startswith('+++ b/'):
             # Extract target file name
             current_file = line[6:]
@@ -67,6 +71,30 @@ def analyze_diff(diff_content):
                 else:
                     file_deltas[current_file]["deleted"].append(item)
                 continue
+
+            # 2.5. Parse Kubernetes additions/deletions
+            m_kind = k8s_kind_re.match(content)
+            if m_kind:
+                kind_val = m_kind.group(1)
+                if is_added:
+                    last_added_kind = kind_val
+                else:
+                    last_deleted_kind = kind_val
+                continue
+
+            m_name = k8s_name_re.match(content)
+            if m_name:
+                name_val = m_name.group(1)
+                if is_added and last_added_kind:
+                    item = f"Kubernetes resource `{last_added_kind}.{name_val}`"
+                    file_deltas[current_file]["added"].append(item)
+                    last_added_kind = None
+                elif not is_added and last_deleted_kind:
+                    item = f"Kubernetes resource `{last_deleted_kind}.{name_val}`"
+                    file_deltas[current_file]["deleted"].append(item)
+                    last_deleted_kind = None
+                continue
+
 
             # 3. Parse general property modifications (FinOps SKUs, tags, compliance keys)
             if any(prop in content for prop in ["vm_size", "size", "sku", "tags", "CostCenter", "Orchestrator", "version"]):

@@ -81,6 +81,27 @@ else
   echo -e "${GREEN}✓ Python 3 and pip3 are present.${NC}"
 fi
 
+# Ensure Python skill dependencies (tree-sitter) are installed
+echo -e "\n${BOLD}[0] Prime Python Skill Dependencies (Tree-sitter)${NC}"
+REQ_PATH="opencode/.opencode/skills/requirements.txt"
+if [ -f "$REQ_PATH" ]; then
+  echo -e "  Installing Tree-sitter requirements from ${BOLD}${REQ_PATH}${NC}..."
+  if pip3 install -r "$REQ_PATH" &> /dev/null || pip3 install --user -r "$REQ_PATH" &> /dev/null; then
+    echo -e "      ${GREEN}✓ Successfully installed Tree-sitter libraries!${NC}"
+  else
+    echo -e "      ${RED}❌ Failed to install Tree-sitter libraries via pip3.${NC}"
+  fi
+else
+  echo -e "  Installing default Tree-sitter libraries..."
+  if pip3 install tree-sitter tree-sitter-hcl tree-sitter-python tree-sitter-yaml tree-sitter-go tree-sitter-javascript &> /dev/null || \
+     pip3 install --user tree-sitter tree-sitter-hcl tree-sitter-python tree-sitter-yaml tree-sitter-go tree-sitter-javascript &> /dev/null; then
+    echo -e "      ${GREEN}✓ Successfully installed default Tree-sitter libraries!${NC}"
+  else
+    echo -e "      ${RED}❌ Failed to install default Tree-sitter libraries.${NC}"
+  fi
+fi
+
+
 echo -e "\n${BLUE}${BOLD}Analyzing workspace tooling status...${NC}"
 
 # Function to check and install a tool via brew

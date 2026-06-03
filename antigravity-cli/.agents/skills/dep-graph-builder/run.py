@@ -1,32 +1,22 @@
 import os
 import json
 import argparse
-import glob
 import logging
 import sys
-import subprocess
 import re
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# Attempt to load tree-sitter bindings; auto-install if missing
+# Attempt to load tree-sitter bindings
 try:
     import tree_sitter
     import tree_sitter_hcl
     TREE_SITTER_AVAILABLE = True
 except ImportError:
-    logging.info("Tree-sitter libraries missing. Initiating self-healing auto-install...")
-    try:
-        req_path = os.path.join(os.path.dirname(__file__), "..", "requirements.txt")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        import tree_sitter
-        import tree_sitter_hcl
-        TREE_SITTER_AVAILABLE = True
-        logging.info("Self-healing complete. Tree-sitter installed and loaded.")
-    except Exception as e:
-        TREE_SITTER_AVAILABLE = False
-        logging.warning(f"Self-healing failed: {e}. Falling back to Regex mode.")
+    TREE_SITTER_AVAILABLE = False
+    logging.warning("Tree-sitter libraries or HCL grammar bindings are missing. Please run './install-dev-tools.sh' to install required dependencies. Falling back to Regex mode.")
+
 
 # Global cache for compiled tree-sitter grammars
 GRAMMARS = {}
