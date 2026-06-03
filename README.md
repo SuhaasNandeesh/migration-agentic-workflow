@@ -27,9 +27,11 @@ Our autonomous agents bypass slow, expensive LLM token requests by executing syn
 ```bash
 ./install-dev-tools.sh
 ```
-This script validates or configures Homebrew and installs **31 native binaries** across IaC (`terraform`, `tflint`, `checkov`, `trivy`), policy & cost (`infracost`, `opa`, `conftest`), Kubernetes (`kubeconform`, `kube-linter`, `helm`, `kustomize`), CI/CD & shell linting (`actionlint`, `yamllint`, `shellcheck`, `hadolint`), secret scanning (`gitleaks`, `trufflehog`, `detect-secrets`), cloud CLIs (`az`, `aws`, `bicep`), data utilities (`jq`, `yq`), and container supply-chain (`syft`, `grype`, `cosign`, `skopeo`, `crane`). See the full matrix in Section 5.
+This script validates or configures Homebrew and installs **31 native binaries** across IaC (`terraform`, `tflint`, `checkov`, `trivy`), policy & cost (`infracost`, `opa`, `conftest`), Kubernetes (`kubeconform`, `kube-linter`, `helm`, `kustomize`), CI/CD & shell linting (`actionlint`, `yamllint`, `shellcheck`, `hadolint`), secret scanning (`gitleaks`, `trufflehog`, `detect-secrets`), cloud CLIs (`az`, `aws`, `bicep`), data utilities (`jq`, `yq`), and container supply-chain (`syft`, `grype`, `cosign`, `skopeo`, `crane`). It also automatically verifies and installs Python Tree-sitter requirements (listed in `opencode/.opencode/skills/requirements.txt`) to prepare the environment for advanced code stubbing. See the full matrix in Section 5.
 
 ### Step 2: Configure AI Model API Keys or Local Endpoints
+
+
 Expose your API keys in your active terminal shell, or launch your offline model in **LM Studio** (see Section 4 for offline setup):
 ```bash
 # Cloud-based API keys
@@ -293,7 +295,8 @@ This system incorporates state-of-the-art context optimizations, contract protec
 * **Declarative Imports (`imports.tf`)**: Generating declarative `import` blocks is much safer and more auditable than imperative CLI commands (`terraform import`), preserving IaC state history in code review cycles.
 
 ### Multi-Language AST Parsing & Resiliency
-* **Twin-Track Resiliency (AST + Regex Fallbacks)**: Always pair high-precision AST traversers (e.g. Tree-sitter parsers) with structurally matching Regex-based fallbacks. This ensures absolute architectural safety: if a host system lacks compilers, native headers, or pre-compiled bindings, the agentic pipeline degrades gracefully without interruption, maintaining highly detailed dependency extraction.
+
+* **Twin-Track Resiliency (AST + Regex Fallbacks)**: Always pair high-precision AST folding (e.g., Tree-sitter stubbing for HCL, Python, Go, JS/TS, YAML) with structurally matching text-based fallbacks. The `ast-stubber` dynamically loads language grammars and runs robust AST-folding traverses. If parsing fails or the tree-sitter libraries are missing, a double-layered `try...except` fail-safe gracefully handles the error and falls back to language-agnostic text-based bracket/indentation folding, guaranteeing that a syntactically valid stub is always returned and preventing pipeline halts.
 * **Resilient Diagram Linting**: Direct regex matches like `\[.*[<>&].*\]` on diagram source lines contain hidden greedy bugs, spanning across connectors (like `-->`) and creating false positive compliance violations. Isolating node brackets and parsing label scopes individually ensures robust, comment-resilient syntax checking.
 * **Case-Insensitive Filename Traversal**: Checking exclusively for uppercase `SKILL.md` skips skills using lowercase `skill.md` (e.g. `coverage-auditor`, `dep-graph-builder`, `mermaid-linter`). File-existence checks are case-insensitive.
 * **Recursive Directory Sync**: The sync process recursively duplicates entire skill subdirectories rather than copying markdown documents in isolation, retaining crucial script runners (`run.py`), local variables, and asset templates.
@@ -364,6 +367,7 @@ Instantly see exactly what resources and properties have changed without inspect
    ```bash
    python3 validation/resource_delta_analyzer.py output/artifacts/latest-diff.patch output/artifacts/ast-summary.md
    ```
+   *This utility dynamically parses both Terraform cloud resource additions/deletions and stateful Kubernetes service/deployment YAML modifications.*
 3. Display the clean delta checklist:
    ```bash
    cat output/artifacts/ast-summary.md
