@@ -134,7 +134,7 @@ def run_repo_migration(repo_conf, global_config):
 
     # Replicate critical configuration, rules and tooling directories to target repo root
     print(f"[-] Replicating configuration files, validation engines, and references...")
-    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl"]:
+    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl", "pi.config.ts"]:
         src_rules = os.path.join(BASE_DIR, rules_file)
         dst_rules = os.path.join(target_dir, rules_file)
         if os.path.exists(src_rules):
@@ -171,14 +171,14 @@ def run_repo_migration(repo_conf, global_config):
             if ig not in existing_ignores and ig.strip() not in existing_ignores:
                 gf.write(ig + "\n")
 
-    # 3. Carry forward the consolidated company-patterns.md to the local workspace
+    # 3. Carry forward all pattern files to the local workspace
     local_knowledge_dir = os.path.join(target_dir, "knowledge")
     os.makedirs(local_knowledge_dir, exist_ok=True)
-    local_company_patterns = os.path.join(local_knowledge_dir, "company-patterns.md")
     
-    if os.path.exists(SHARED_KNOWLEDGE_FILE):
-        print(f"[-] Syncing consolidated company patterns to local knowledge store...")
-        shutil.copy(SHARED_KNOWLEDGE_FILE, local_company_patterns)
+    import glob
+    print(f"[-] Syncing all patterns to local knowledge store...")
+    for pattern_file in glob.glob(os.path.join(BASE_DIR, "knowledge", "*-patterns.md")):
+        shutil.copy(pattern_file, os.path.join(local_knowledge_dir, os.path.basename(pattern_file)))
 
     # 3.5 Copy source (AWS) repository to target output/source folder for sandbox-safe execution
     target_source_dir = os.path.join(target_dir, "output", "source")
@@ -216,9 +216,10 @@ def run_repo_migration(repo_conf, global_config):
     print(f"[CUE] To run local agents: cd {target_dir} && antigravity")
     
     # 6. Post-migration: Carry back any newly learned patterns (Autonomous Learning)
-    if os.path.exists(local_company_patterns):
-        print(f"[-] Copying back updated company patterns for future repository pipelines...")
-        shutil.copy(local_company_patterns, SHARED_KNOWLEDGE_FILE)
+    import glob
+    print(f"[-] Syncing updated patterns back to master...")
+    for local_pattern in glob.glob(os.path.join(local_knowledge_dir, "*-patterns.md")):
+        shutil.copy(local_pattern, os.path.join(BASE_DIR, "knowledge", os.path.basename(local_pattern)))
         
     # Trigger offline data-contract validation if outputs exist
     validate_target_contracts(target_dir)

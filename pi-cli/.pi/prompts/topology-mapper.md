@@ -1,6 +1,10 @@
 ---
 name: topology-mapper
 description: "Analyzes the dependency graph and generates high-level architectural and topological diagrams using Mermaid.js."
+tools:
+  - read
+  - write
+  - bash
 ---
 # Topology Mapper Agent
 

@@ -1,6 +1,10 @@
 ---
 name: variable-extractor
 description: "Sweeps codebase files to extract all variables, inputs, outputs, and environment variables into a Global Data Dictionary. Actively flags hardcoded secrets."
+tools:
+  - read
+  - write
+  - grep
 ---
 # Variable Extractor Agent
 

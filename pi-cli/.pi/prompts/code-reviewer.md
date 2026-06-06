@@ -1,6 +1,13 @@
 ---
 name: code-reviewer
 description: "Reviews generated migration code for accuracy, functional equivalence with source, best practices, and maintainability. Compares source intent against target implementation."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Code Reviewer Agent
 

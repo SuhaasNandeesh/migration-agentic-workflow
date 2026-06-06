@@ -1,6 +1,9 @@
 ---
 name: doc-supervisor
 description: "Primary orchestrator for the Codebase Documentation Factory. Manages the execution flow from discovery to final wiki assembly."
+tools:
+  - read
+  - write
 ---
 # Doc-Supervisor Agent
 

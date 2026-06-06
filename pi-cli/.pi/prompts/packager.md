@@ -1,6 +1,13 @@
 ---
 name: packager
 description: "Assembles all validated migration artifacts into a deployment-ready bundle with documentation, reports, and deployment manifests. Creates a self-contained package for manual deployment."
+tools:
+  - read
+  - write
+  - edit
+  - bash
+  - ls
+  - find
 ---
 # Packager Agent
 

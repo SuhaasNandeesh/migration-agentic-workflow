@@ -1,6 +1,11 @@
 ---
 name: memory-writer
 description: "Persists useful knowledge to the memory store autonomously after successful task execution. Writes concise, deduplicated entries directly to disk."
+tools:
+  - read
+  - write
+  - edit
+  - bash
 ---
 # Memory Writer Agent
 
@@ -34,7 +39,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 {
   "entries_written": [
     {
-      "file": "memory-store/assets/path",
+      "file": ".pi/skills/memory-store/assets/path",
       "entry": {
         "problem": "",
         "fix": "",
@@ -47,10 +52,10 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 ```
 
 ## Target Locations
-- Structured entries → `memory-store/assets/structured/issues.json`
-- Documentation → `memory-store/assets/docs/issues_and_fixes.md`
-- Execution traces → `memory-store/assets/traces/`
-- Progress updates → `memory-store/assets/docs/progress.md`
+- Structured entries → `.pi/skills/memory-store/assets/structured/issues.json`
+- Documentation → `.pi/skills/memory-store/assets/docs/issues_and_fixes.md`
+- Execution traces → `.pi/skills/memory-store/assets/traces/`
+- Progress updates → `.pi/skills/memory-store/assets/docs/progress.md`
 
 ## Knowledge Wiki Updates — MANDATORY
 

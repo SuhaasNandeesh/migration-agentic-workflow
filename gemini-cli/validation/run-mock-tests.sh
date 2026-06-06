@@ -131,13 +131,14 @@ cd - > /dev/null
 
 # Parse results and output JSON
 STATUS="pass"
-if [ $TEST_EXIT -ne 0 ] || [[ "${VALIDATE_OUTPUT}" == *'"valid":false'* ]]; then
+if [ $TEST_EXIT -ne 0 ] || [[ "${VALIDATE_OUTPUT}" =~ \"valid\"[[:space:]]*:[[:space:]]*false ]]; then
   STATUS="fail"
 fi
 
 python3 -c '
 import json
 import sys
+import re
 
 status = sys.argv[1]
 fmt_output = sys.argv[2]
@@ -148,7 +149,7 @@ result_file = sys.argv[6]
 test_exit = int(sys.argv[7])
 
 fmt_status = "pass" if not fmt_output.strip() else "fail"
-validate_status = "pass" if "\"valid\":false" not in validate_output else "fail"
+validate_status = "fail" if re.search(r"\"valid\"\s*:\s*false", validate_output) else "pass"
 test_status = "pass" if test_exit == 0 else "fail"
 
 result_data = {

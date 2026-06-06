@@ -1,6 +1,10 @@
 ---
 name: spec-analyst
 description: "Deep-dives into specific codebase modules (IaC, Orchestration, App Logic) to write highly detailed Markdown specifications."
+tools:
+  - read
+  - write
+  - grep
 ---
 # Spec Analyst Agent
 

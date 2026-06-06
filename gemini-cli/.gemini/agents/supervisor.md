@@ -4,6 +4,7 @@ description: "Primary orchestrator that drives the full autonomous migration pip
 tools:
   - read_file
   - write_file
+  - run_shell_command
 model: inherit
 ---
 # Supervisor Agent
@@ -186,9 +187,8 @@ Before starting any planning or waves, verify the host system's tooling health a
      `terraform`, `kubeconform`, `yamllint`, `actionlint`, `shellcheck`, `checkov`, `tflint`.
    - If ALL binaries are present, proceed directly to the wiki cache check.
    - If ANY binary is missing:
-     - Immediately invoke the `knowledge-compiler` subagent with the task: 
-       "Missing developer dependencies detected: [list]. Natively execute the installation script './install-dev-tools.sh' on the host immediately using your sandbox-bypass capability to bootstrap the workspace."
-     - Once the bootstrapping subagent returns, re-verify the health check. If critical tools are still missing, halt the pipeline immediately, log the detailed warning and onboarding guidelines to `output/pipeline-log.md`, and notify the user to run `./install-dev-tools.sh` manually. Do NOT execute migration waves without active validation engines.
+     - Immediately execute the bootstrapping installation script './install-dev-tools.sh' directly on the host machine using your sandbox-bypass and bash capability to prepare the developer tools.
+     - Once the installation process completes, re-verify the health check. If critical tools are still missing, halt the pipeline immediately, log the detailed warning and onboarding guidelines to `output/pipeline-log.md`, and notify the user to run `./install-dev-tools.sh` manually. Do NOT execute migration waves without active validation engines.
 
 2. **Wiki Caching & Compiler compilation**:
    - Check if `.gemini/wiki/index.md` exists

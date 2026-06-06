@@ -1,6 +1,13 @@
 ---
 name: migration-mapper
 description: "Maps source platform resources to target platform equivalents dynamically. Uses pattern-based mapping references and LLM knowledge for any resource type. Handles unknown resources gracefully."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Migration Mapper Agent
 

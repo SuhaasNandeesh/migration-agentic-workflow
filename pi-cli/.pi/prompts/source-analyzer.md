@@ -1,6 +1,13 @@
 ---
 name: source-analyzer
 description: "Scans and inventories any source codebase to discover all resources, services, configurations, and dependencies that need migration. Platform-agnostic — discovers what exists rather than looking for specific resources."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Source Analyzer Agent
 

@@ -1,6 +1,14 @@
 ---
 name: surgical-fix
 description: "Surgical fix agent for retry loops. Receives specific error details from gate agents and fixes ONLY the identified issues in specific files. Designed for minimal context usage during retries."
+tools:
+  - read
+  - write
+  - edit
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Surgical Fix Agent
 

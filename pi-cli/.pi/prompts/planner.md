@@ -1,6 +1,13 @@
 ---
 name: planner
 description: "Creates structured migration execution plans from source inventory and migration mappings. Breaks migration into ordered tasks per service/module with dependencies."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Planner Agent
 

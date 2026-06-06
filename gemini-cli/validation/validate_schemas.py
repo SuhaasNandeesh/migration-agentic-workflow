@@ -41,6 +41,16 @@ class NativeSchemaValidator:
                     for key, val in data.items():
                         if key in properties:
                             self.validate(val, properties[key], f"{path}.{key}" if path else key)
+                    
+                    additional_properties = schema.get("additionalProperties")
+                    if additional_properties is False:
+                        for key in data:
+                            if key not in properties:
+                                self.errors.append(f"Property '{path + '.' if path else ''}{key}' is not allowed by the schema")
+                    elif isinstance(additional_properties, dict):
+                        for key, val in data.items():
+                            if key not in properties:
+                                self.validate(val, additional_properties, f"{path}.{key}" if path else key)
             elif expected_type == "array":
                 if not isinstance(data, list):
                     self.errors.append(f"Field '{path or 'root'}' is expected to be an array, but got {type(data).__name__}")

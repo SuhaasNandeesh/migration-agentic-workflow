@@ -1,6 +1,13 @@
 ---
 name: cost-estimator
 description: "Estimates infrastructure cost of generated code using Infracost or Azure Pricing API. Compares source vs target costs. Flags cost anomalies."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Cost Estimator Agent
 

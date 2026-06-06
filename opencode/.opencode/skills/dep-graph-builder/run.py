@@ -60,7 +60,8 @@ def extract_hcl_treesitter(filepath, lang):
     from tree_sitter import Parser
     deps = []
     try:
-        parser = Parser(lang)
+        parser = Parser()
+        parser.language = lang
         with open(filepath, 'rb') as f:
             code = f.read()
         tree = parser.parse(code)
@@ -131,7 +132,8 @@ def extract_python_treesitter(filepath, lang):
     from tree_sitter import Parser
     deps = []
     try:
-        parser = Parser(lang)
+        parser = Parser()
+        parser.language = lang
         with open(filepath, 'rb') as f:
             code = f.read()
         tree = parser.parse(code)
@@ -210,7 +212,8 @@ def extract_yaml_treesitter(filepath, lang):
     from tree_sitter import Parser
     deps = []
     try:
-        parser = Parser(lang)
+        parser = Parser()
+        parser.language = lang
         with open(filepath, 'rb') as f:
             code = f.read()
         tree = parser.parse(code)
@@ -269,7 +272,8 @@ def extract_go_treesitter(filepath, lang):
     from tree_sitter import Parser
     deps = []
     try:
-        parser = Parser(lang)
+        parser = Parser()
+        parser.language = lang
         with open(filepath, 'rb') as f:
             code = f.read()
         tree = parser.parse(code)
@@ -329,7 +333,8 @@ def extract_js_treesitter(filepath, lang):
     from tree_sitter import Parser
     deps = []
     try:
-        parser = Parser(lang)
+        parser = Parser()
+        parser.language = lang
         with open(filepath, 'rb') as f:
             code = f.read()
         tree = parser.parse(code)

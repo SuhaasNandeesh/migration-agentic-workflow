@@ -1,6 +1,10 @@
 ---
 name: evaluator
 description: "Measures migration completeness and quality. Tracks resource coverage, validation pass rates, security compliance, and identifies gaps in the migration."
+tools:
+  - read
+  - write
+  - bash
 ---
 # Evaluator Agent
 

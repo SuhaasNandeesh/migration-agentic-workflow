@@ -33,15 +33,17 @@ def analyze_diff(diff_content):
             current_file = None
             last_added_kind = None
             last_deleted_kind = None
-        elif line.startswith('+++ b/'):
-            # Extract target file name
-            current_file = line[6:]
-            if current_file not in file_deltas:
-                file_deltas[current_file] = {
-                    "added": [],
-                    "deleted": [],
-                    "modified": []
-                }
+        elif line.startswith('--- a/') or line.startswith('+++ b/'):
+            # Extract file name, skipping /dev/null
+            filename = line[6:]
+            if filename != "/dev/null":
+                current_file = filename
+                if current_file not in file_deltas:
+                    file_deltas[current_file] = {
+                        "added": [],
+                        "deleted": [],
+                        "modified": []
+                    }
         elif current_file and (line.startswith('+') or line.startswith('-')):
             # Ignore structural git diff metadata
             if line.startswith('+++') or line.startswith('---'):

@@ -1,6 +1,13 @@
 ---
 name: validator
 description: "Validates artifacts for correctness, execution readiness, and strict standards compliance. Runs linters and validators autonomously and returns structured results."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Validator Agent
 

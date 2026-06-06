@@ -1,6 +1,10 @@
 ---
 name: drift-verifier
 description: "OPT-IN online verification gate. When cloud credentials are available, runs `terraform plan` / `az deployment what-if` against the target to confirm the generated IaC is apply-clean and that declarative state imports produce zero drift. Skips gracefully (never blocks) when offline."
+tools:
+  - read
+  - write
+  - bash
 ---
 # Drift Verifier Agent (Opt-In Online Gate)
 

@@ -1,6 +1,13 @@
 ---
 name: secrets-migrator
 description: "Maps source secret/config/key stores (AWS Secrets Manager, SSM Parameter Store, KMS) to Azure Key Vault and produces a reference-rewrite plan so app code and pipelines fetch secrets via Managed Identity instead of static credentials. Never moves secret values."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Secrets Migrator Agent
 

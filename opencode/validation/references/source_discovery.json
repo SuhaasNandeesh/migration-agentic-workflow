@@ -1,1 +1,15 @@
-{}
+{
+  "discovery_scope": {
+    "exclude_patterns": [
+      "**/.git/**",
+      "**/node_modules/**",
+      "**/output/**",
+      "**/DocumentationFactory/output/**",
+      "**/.terraform/**"
+    ],
+    "target_file_extensions": [".tf", ".yaml", ".yml", ".json", ".py", ".go", ".js", ".ts", "Jenkinsfile"]
+  },
+  "default_cloud_mappings": {
+    "aws": "azure"
+  }
+}

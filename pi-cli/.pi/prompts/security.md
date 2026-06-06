@@ -1,6 +1,13 @@
 ---
 name: security
 description: "Enforces DevSecOps security practices autonomously. Scans for secrets, validates identity/auth patterns, checks network security, verifies encryption, and ensures compliance with target platform security standards."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Security Agent
 

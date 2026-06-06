@@ -6,7 +6,8 @@ This report aggregates multi-repo status, FinOps cost targets, and security post
 
 | Repository | Targets | Target Environments | Status |
 | :--- | :--- | :--- | :--- |
-| repo-test-infra | Azure | dev, test | [Prepared & Verified] |
+| repo-01-infra | Azure | dev, test, prod | [Prepared & Verified] |
+| repo-02-app-services | Azure | dev, prod | [Prepared & Verified] |
 
 ## Consolidated Security Guardrails
 - Enforce OIDC Authentication: **Enforced** (OIDC default, secrets fallback compatible)

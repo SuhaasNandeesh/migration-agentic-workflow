@@ -78,6 +78,15 @@ CAP_TO_TOOLS = {
         'grep': ['grep_search'],
         'fetch': ['web_fetch'],
     },
+    'pi': {
+        'read': ['read'],
+        'write': ['write'],
+        'edit': ['edit'],
+        'bash': ['bash'],
+        'glob': ['ls', 'find'],
+        'grep': ['grep'],
+        'fetch': [],
+    },
 }
 
 DEFAULT_PLATFORM_MODELS = {
@@ -120,7 +129,7 @@ def setup_directories():
                     else:
                         os.remove(dst)
                 if os.path.isdir(src):
-                    shutil.copytree(src, dst)
+                    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("temp_test_run", "output", "__pycache__"))
                 else:
                     shutil.copy(src, dst)
         print(f"Synced Workspace Items to {os.path.relpath(target_root, BASE_DIR)}")
@@ -329,9 +338,15 @@ def build_claude_frontmatter(name, fm, tools, temperature, model):
     res += "---\n"
     return res
 
-def build_pi_frontmatter(name, fm, temperature):
+def build_pi_frontmatter(name, fm, tools, temperature):
     desc = fm.get('description', '')
-    return f"---\nname: {name}\ndescription: {yaml_dq(desc)}\n---\n"
+    res = f"---\nname: {name}\ndescription: {yaml_dq(desc)}\ntools:\n"
+    for t in tools:
+        res += f"  - {t}\n"
+    if temperature is not None:
+        res += f"temperature: {temperature}\n"
+    res += "---\n"
+    return res
 
 def write_gemini_agent(name, fm, body, tools, temperature):
     gemini_fm = build_gemini_frontmatter(name, fm, tools, temperature)
@@ -347,8 +362,8 @@ def write_claude_agent(name, fm, body, tools, temperature, claude_model):
     with open(os.path.join(target_dir, f"{name}.md"), 'w') as f:
         f.write(claude_fm + body)
 
-def write_pi_agent(name, fm, body, temperature):
-    pi_fm = build_pi_frontmatter(name, fm, temperature)
+def write_pi_agent(name, fm, body, tools, temperature):
+    pi_fm = build_pi_frontmatter(name, fm, tools, temperature)
     with open(os.path.join(PI_AGENTS_DIR, f"{name}.md"), 'w') as f:
         f.write(pi_fm + body)
 
@@ -405,6 +420,7 @@ def process_agents():
         gemini_tools = map_tools('gemini', caps)
         claude_tools = map_tools('claude', caps)
         antigravity_tools = map_tools('antigravity', caps)
+        pi_tools = map_tools('pi', caps)
 
         total_raw_chars += len(body)
         
@@ -432,7 +448,7 @@ def process_agents():
         # 4. Write agent configurations out
         write_gemini_agent(name, fm, gemini_body, gemini_tools, temperature)
         write_claude_agent(name, fm, claude_body, claude_tools, temperature, claude_model)
-        write_pi_agent(name, fm, pi_body, temperature)
+        write_pi_agent(name, fm, pi_body, pi_tools, temperature)
         write_antigravity_agent(name, fm, antigravity_body, antigravity_tools, temperature)
             
     # Compile footprint stats
@@ -607,11 +623,49 @@ def process_configs():
         pi_config_content = f"""export default {{
   model: "{model}",
   skillsDir: "./.pi/skills",
-  promptsDir: "./.pi/prompts"
+  promptsDir: "./.pi/prompts",
+  extensions: [
+    "pi-opencode-bridge"
+  ]
 }};
 """
         with open(os.path.join(PI_ROOT, 'pi.config.ts'), 'w') as f:
             f.write(pi_config_content)
+
+        # Generate Pi models configuration (.pi/models.json)
+        pi_models = {"providers": {}}
+        for prov_id, prov_data in config.get('provider', {}).items():
+            options = prov_data.get('options', {})
+            base_url = options.get('baseURL') or options.get('baseUrl')
+            if base_url:
+                models_list = []
+                for model_id in prov_data.get('models', {}).keys():
+                    models_list.append({"id": model_id})
+                
+                pi_models["providers"][prov_id] = {
+                    "baseUrl": base_url,
+                    "api": "openai-completions",
+                    "apiKey": prov_id,
+                    "models": models_list
+                }
+        
+        pi_models_path = os.path.join(PI_ROOT, '.pi', 'models.json')
+        os.makedirs(os.path.dirname(pi_models_path), exist_ok=True)
+        with open(pi_models_path, 'w') as f:
+            json.dump(pi_models, f, indent=2)
+
+        # Generate Pi settings configuration (.pi/settings.json)
+        pi_settings = {}
+        if '/' in model:
+            parts = model.split('/', 1)
+            pi_settings['defaultProvider'] = parts[0]
+            pi_settings['defaultModel'] = parts[1]
+        else:
+            pi_settings['defaultModel'] = model
+            
+        pi_settings_path = os.path.join(PI_ROOT, '.pi', 'settings.json')
+        with open(pi_settings_path, 'w') as f:
+            json.dump(pi_settings, f, indent=2)
 
         # Antigravity config
         antigravity_config = json.loads(json.dumps(config))

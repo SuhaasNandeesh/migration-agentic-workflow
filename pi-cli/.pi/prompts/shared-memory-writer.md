@@ -1,6 +1,10 @@
 ---
 name: shared-memory-writer
 description: "Shared Memory Writer agent. Analyzes pipeline logs and surgical-fix actions to extract lessons learned, writing them to a global knowledge base."
+tools:
+  - read
+  - write
+  - edit
 ---
 # Shared Memory Writer Agent
 

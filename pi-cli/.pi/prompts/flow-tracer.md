@@ -1,6 +1,10 @@
 ---
 name: flow-tracer
 description: "Analyzes CI/CD pipelines, workflows, and container builds to document exact test, build, and deployment lifecycles."
+tools:
+  - read
+  - write
+  - grep
 ---
 # Flow Tracer Agent
 

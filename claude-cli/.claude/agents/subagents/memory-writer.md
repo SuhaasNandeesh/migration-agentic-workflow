@@ -36,7 +36,7 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 {
   "entries_written": [
     {
-      "file": "memory-store/assets/path",
+      "file": ".claude/skills/memory-store/assets/path",
       "entry": {
         "problem": "",
         "fix": "",
@@ -49,10 +49,10 @@ To keep context windows lean, you MUST read inputs from and write outputs to dis
 ```
 
 ## Target Locations
-- Structured entries → `memory-store/assets/structured/issues.json`
-- Documentation → `memory-store/assets/docs/issues_and_fixes.md`
-- Execution traces → `memory-store/assets/traces/`
-- Progress updates → `memory-store/assets/docs/progress.md`
+- Structured entries → `.claude/skills/memory-store/assets/structured/issues.json`
+- Documentation → `.claude/skills/memory-store/assets/docs/issues_and_fixes.md`
+- Execution traces → `.claude/skills/memory-store/assets/traces/`
+- Progress updates → `.claude/skills/memory-store/assets/docs/progress.md`
 
 ## Knowledge Wiki Updates — MANDATORY
 

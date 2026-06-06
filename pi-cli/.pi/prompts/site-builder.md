@@ -1,6 +1,9 @@
 ---
 name: site-builder
 description: "Compiles the generated documentation into a static MkDocs site and performs deterministic Dead-Link checks and Markdown linting."
+tools:
+  - read
+  - bash
 ---
 # Site Builder Agent
 

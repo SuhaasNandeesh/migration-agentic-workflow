@@ -1,6 +1,10 @@
 ---
 name: doc-surgical-fix
 description: "Surgical fix agent. Patches specific markdown errors identified by the doc-reviewer without regenerating the entire file."
+tools:
+  - read
+  - write
+  - edit
 ---
 # Doc Surgical Fix Agent
 

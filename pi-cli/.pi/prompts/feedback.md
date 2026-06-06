@@ -1,6 +1,10 @@
 ---
 name: feedback
 description: "Analyzes migration pipeline metrics and failure patterns to suggest improvements for future migration runs. Learns from each service migration to improve the next."
+tools:
+  - read
+  - write
+  - bash
 ---
 # Feedback Agent
 

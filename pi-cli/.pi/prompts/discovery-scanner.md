@@ -1,6 +1,13 @@
 ---
 name: discovery-scanner
 description: "Scans the codebase to categorize files and identify cross-dependencies between Infrastructure, App Code, and CI/CD pipelines."
+tools:
+  - read
+  - write
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Discovery Scanner Agent
 

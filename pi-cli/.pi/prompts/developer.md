@@ -1,6 +1,14 @@
 ---
 name: developer
 description: "Generates target platform implementation files from migration mappings. Translates any source resource to its target equivalent, writing complete production-ready files to disk."
+tools:
+  - read
+  - write
+  - edit
+  - bash
+  - ls
+  - find
+  - grep
 ---
 # Developer Agent
 

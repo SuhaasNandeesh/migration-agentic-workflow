@@ -103,7 +103,8 @@ def fold_with_treesitter(content: str, ext: str) -> str:
         raise RuntimeError(f"Grammar loading failed or not installed for language: {lang_name}")
         
     from tree_sitter import Parser
-    parser = Parser(grammar)
+    parser = Parser()
+    parser.language = grammar
     
     tree = parser.parse(content.encode('utf-8'))
     

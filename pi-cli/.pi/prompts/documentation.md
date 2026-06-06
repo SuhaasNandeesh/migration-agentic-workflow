@@ -1,6 +1,13 @@
 ---
 name: documentation
 description: "Generates comprehensive migration documentation including runbooks, mapping sheets, architecture decisions, deployment guides, and rollback procedures. Adapts to any source→target migration."
+tools:
+  - read
+  - write
+  - edit
+  - bash
+  - ls
+  - find
 ---
 # Documentation Agent
 
