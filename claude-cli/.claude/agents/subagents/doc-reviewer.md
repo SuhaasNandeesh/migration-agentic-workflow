@@ -17,7 +17,8 @@ You are the Doc Reviewer. Your job is to aggressively audit the documentation ge
    python3 .claude/skills/coverage-auditor/run.py \
      --deps DocumentationFactory/output/artifacts/dependency-graph.json \
      --specs DocumentationFactory/output/artifacts/infrastructure-specs.json \
-     --flows DocumentationFactory/output/artifacts/pipeline-flows.json
+     --flows DocumentationFactory/output/artifacts/pipeline-flows.json \
+     --wave auto
    ```
 5. If the script outputs `STATUS: PASS`, return PASS.
 6. If the script outputs `STATUS: FAIL`, return FAIL and pass the exact list of missing files provided by the script to the `doc-surgical-fix` agent.

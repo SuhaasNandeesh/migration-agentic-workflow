@@ -230,6 +230,46 @@ check_and_install_brew "cosign" "cosign" "Supply-Chain"
 check_and_install_brew "skopeo" "skopeo" "Container"
 check_and_install_brew "crane" "crane" "Container"
 
+# Category 9: Pi Agent Extensions (Optional Setup)
+if command -v pi &>/dev/null; then
+  echo -e "\n${BOLD}[9] Pi Coding Agent Extensions Category${NC}"
+  echo -e "  Pi Coding Agent is present. Installing required extensions..."
+  if pi install npm:pi-subagents &>/dev/null && pi install npm:pi-opencode-bridge &>/dev/null; then
+    echo -e "      ${GREEN}✓ Successfully installed pi-subagents and pi-opencode-bridge!${NC}"
+    
+    # Configure NODE_PATH for global resolution of dependencies in Pi Agent
+    GLOBAL_NODE_ROOT=$(npm root -g 2>/dev/null)
+    if [[ -n "$GLOBAL_NODE_ROOT" ]]; then
+      # Check for older @mariozechner scope and alias to new @earendil-works scope to prevent load regressions
+      OLD_SCOPE_DIR="$GLOBAL_NODE_ROOT/@mariozechner/pi-coding-agent"
+      NEW_SCOPE_DIR="$GLOBAL_NODE_ROOT/@earendil-works/pi-coding-agent"
+      if [[ -d "$OLD_SCOPE_DIR" && ! -d "$NEW_SCOPE_DIR" ]]; then
+        echo -e "  Found older @mariozechner package. Creating backward-compatible symlink alias under @earendil-works..."
+        mkdir -p "$GLOBAL_NODE_ROOT/@earendil-works" &>/dev/null
+        ln -sf "$OLD_SCOPE_DIR" "$NEW_SCOPE_DIR" &>/dev/null
+        echo -e "      ${GREEN}✓ Created @earendil-works compat alias symlink.${NC}"
+      fi
+
+      if [[ -z "$NODE_PATH" || "$NODE_PATH" != *"$GLOBAL_NODE_ROOT"* ]]; then
+        ZSHRC="$HOME/.zshrc"
+        if [ -f "$ZSHRC" ]; then
+          if ! grep -q "NODE_PATH" "$ZSHRC"; then
+            echo -e "\n# Node global modules path for Pi Coding Agent" >> "$ZSHRC"
+            echo "export NODE_PATH=\"$GLOBAL_NODE_ROOT\"" >> "$ZSHRC"
+            echo -e "      ${GREEN}✓ Appended export NODE_PATH=\"$GLOBAL_NODE_ROOT\" to $ZSHRC.${NC}"
+            echo -e "      ${YELLOW}Please run 'source $ZSHRC' or open a new terminal tab to apply the configuration.${NC}"
+          fi
+        else
+          echo -e "      ${YELLOW}⚠️  Note: Please add the following to your shell profile to resolve global node packages:${NC}"
+          echo -e "          ${BOLD}export NODE_PATH=\"$GLOBAL_NODE_ROOT\"${NC}"
+        fi
+      fi
+    fi
+  else
+    echo -e "      ${YELLOW}⚠️  Failed to install some Pi extensions. Ensure network access and try running them manually.${NC}"
+  fi
+fi
+
 # Print Installation Summary
 echo -e "\n${CYAN}${BOLD}======================================================================${NC}"
 echo -e "${BOLD}                     SETUP SUMMARY & REPORT                           ${NC}"

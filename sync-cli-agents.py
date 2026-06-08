@@ -38,7 +38,7 @@ CLAUDE_SKILLS_DIR = os.path.join(CLAUDE_ROOT, ".claude", "skills")
 
 # Target directories - Pi
 PI_ROOT = os.path.join(BASE_DIR, "pi-cli")
-PI_AGENTS_DIR = os.path.join(PI_ROOT, ".pi", "prompts")
+PI_AGENTS_DIR = os.path.join(PI_ROOT, ".pi", "agents")
 PI_SKILLS_DIR = os.path.join(PI_ROOT, ".pi", "skills")
 
 # Target directories - Antigravity (New standard)
@@ -306,7 +306,7 @@ def append_delegation_logic(name, body, platform):
         ),
         'pi': (
             "\n\n## CLI-Specific Autonomous Delegation (pi.dev)\n"
-            "To invoke a subagent autonomously, you MUST use `/<agent-name>` to expand its Prompt Template (e.g., `/code-reviewer`).\n"
+            "To invoke a subagent autonomously, you MUST use the `pi-subagents` natural language trigger syntax (e.g., `use <agent-name> to <instructions>` or `ask <agent-name> to <instructions>`). The environment will intercept this trigger and launch the child agent in an isolated session automatically.\n"
             "To utilize a skill, load it when your tasks match its description or invoke it directly if supported.\n"
         ),
         'antigravity': (
@@ -623,9 +623,10 @@ def process_configs():
         pi_config_content = f"""export default {{
   model: "{model}",
   skillsDir: "./.pi/skills",
-  promptsDir: "./.pi/prompts",
+  promptsDir: "./.pi/agents",
   extensions: [
-    "pi-opencode-bridge"
+    "pi-opencode-bridge",
+    "pi-subagents"
   ]
 }};
 """

@@ -41,6 +41,25 @@ def load_config():
     with open(CONFIG_PATH, 'r') as f:
         return json.load(f)
 
+def find_master_pi_resources():
+    """
+    Locates the master pi.config.ts and .pi/ folder relative to BASE_DIR.
+    Checks sibling, current, or parent directories dynamically.
+    Returns:
+      (pi_config_path, pi_dot_folder_path) or (None, None)
+    """
+    candidates = [
+        os.path.join(os.path.dirname(BASE_DIR), "pi-cli"),
+        os.path.join(BASE_DIR, "pi-cli"),
+        BASE_DIR
+    ]
+    for cand in candidates:
+        config_path = os.path.join(cand, "pi.config.ts")
+        dot_folder = os.path.join(cand, ".pi")
+        if os.path.exists(config_path) and os.path.exists(dot_folder):
+            return config_path, dot_folder
+    return None, None
+
 def validate_target_contracts(target_dir):
     print(f"[-] Auditing generated contracts in {target_dir}...")
     artifacts_dir = os.path.join(target_dir, "output", "artifacts")
@@ -134,11 +153,23 @@ def run_repo_migration(repo_conf, global_config):
 
     # Replicate critical configuration, rules and tooling directories to target repo root
     print(f"[-] Replicating configuration files, validation engines, and references...")
-    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl", "pi.config.ts"]:
+    for rules_file in ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "opencode.json", "antigravity.json", "gemini.json", "claude.json", ".mcp.json", ".tflint.hcl"]:
         src_rules = os.path.join(BASE_DIR, rules_file)
         dst_rules = os.path.join(target_dir, rules_file)
         if os.path.exists(src_rules):
             shutil.copy(src_rules, dst_rules)
+            
+    # Explicitly replicate master Pi resources if found
+    pi_config_src, pi_dot_folder_src = find_master_pi_resources()
+    if pi_config_src and os.path.exists(pi_config_src):
+        print(f"[-] Replicating master pi.config.ts from {pi_config_src} to target repo")
+        shutil.copy(pi_config_src, os.path.join(target_dir, "pi.config.ts"))
+    if pi_dot_folder_src and os.path.exists(pi_dot_folder_src):
+        target_pi_folder = os.path.join(target_dir, ".pi")
+        if os.path.exists(target_pi_folder):
+            shutil.rmtree(target_pi_folder)
+        print(f"[-] Replicating master .pi folder from {pi_dot_folder_src} to target repo")
+        shutil.copytree(pi_dot_folder_src, target_pi_folder, ignore=shutil.ignore_patterns("temp_test_run", "output", "__pycache__"))
             
     for tool_folder in ["validation", "migration-mapping"]:
         src_folder = os.path.join(BASE_DIR, tool_folder)
