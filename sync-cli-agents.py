@@ -206,7 +206,7 @@ def parse_md(filepath):
 def parse_tool_caps(filepath):
     """Extract the set of enabled tool capabilities from an agent's frontmatter"""
     with open(filepath, 'r') as f:
-        content = f.read()
+        content = f.read().replace('\r\n', '\n').replace('\r', '\n')
     m = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
     if not m:
         return {'read', 'write', 'bash', 'glob', 'grep'}
@@ -695,6 +695,8 @@ def process_configs():
         # MCP config mapping (mcp -> mcpServers)
         mcp_servers = {}
         for server_name, server_data in config.get('mcp', {}).items():
+            if not server_data.get('enabled', True):
+                continue
             server_conf = {}
             if 'command' in server_data:
                 cmd_val = server_data['command']

@@ -244,7 +244,16 @@ def run_repo_migration(repo_conf, global_config):
 
     # 5. Provide execution cues for runtime logging
     print(f"[!] Target Workspace prepared successfully!")
-    print(f"[CUE] To run local agents: cd {target_dir} && antigravity")
+    cli_cmd = "antigravity"
+    if ORCHESTRATION_NAME == ".gemini":
+        cli_cmd = "gemini"
+    elif ORCHESTRATION_NAME == ".claude":
+        cli_cmd = "claude"
+    elif ORCHESTRATION_NAME == ".pi":
+        cli_cmd = "pi"
+    elif ORCHESTRATION_NAME == ".opencode":
+        cli_cmd = "opencode"
+    print(f"[CUE] To run local agents: cd {target_dir} && {cli_cmd}")
     
     # 6. Post-migration: Carry back any newly learned patterns (Autonomous Learning)
     import glob

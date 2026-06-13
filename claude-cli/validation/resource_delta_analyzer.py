@@ -17,22 +17,39 @@ import re
 def analyze_diff(diff_content):
     file_deltas = {}
     current_file = None
-    last_added_kind = None
-    last_deleted_kind = None
+    in_block_comment_add = False
+    in_block_comment_del = False
+    k8s_added_kind = None
+    k8s_deleted_kind = None
+    k8s_added_name = None
+    k8s_deleted_name = None
+    in_metadata_add = False
+    in_metadata_del = False
+    metadata_indent_add = -1
+    metadata_indent_del = -1
 
     # Regex definitions for IaC (Terraform) and Kubernetes elements
     tf_resource_re = re.compile(r'^\s*resource\s+"([^"]+)"\s+"([^"]+)"')
     tf_module_re = re.compile(r'^\s*module\s+"([^"]+)"')
     k8s_kind_re = re.compile(r'^\s*kind:\s*(\w+)')
     k8s_name_re = re.compile(r'^\s*name:\s*([\w\-]+)')
+    k8s_metadata_re = re.compile(r'^\s*metadata:\s*$')
 
     lines = diff_content.split('\n')
 
     for line in lines:
         if line.startswith('diff --git'):
             current_file = None
-            last_added_kind = None
-            last_deleted_kind = None
+            in_block_comment_add = False
+            in_block_comment_del = False
+            k8s_added_kind = None
+            k8s_deleted_kind = None
+            k8s_added_name = None
+            k8s_deleted_name = None
+            in_metadata_add = False
+            in_metadata_del = False
+            metadata_indent_add = -1
+            metadata_indent_del = -1
         elif line.startswith('--- a/') or line.startswith('+++ b/'):
             # Extract file name, skipping /dev/null
             filename = line[6:]
@@ -49,8 +66,34 @@ def analyze_diff(diff_content):
             if line.startswith('+++') or line.startswith('---'):
                 continue
 
+            # Calculate indentation level in diff content (excluding the diff prefix + or -)
+            indent = len(line[1:]) - len(line[1:].lstrip())
             content = line[1:].strip()
             is_added = line.startswith('+')
+
+            # Skip comments and track multi-line block comments
+            if is_added:
+                if "/*" in content:
+                    in_block_comment_add = True
+                if in_block_comment_add:
+                    if "*/" in content:
+                        in_block_comment_add = False
+                    continue
+                if "*/" in content:
+                    continue
+                if content.startswith('#') or content.startswith('//'):
+                    continue
+            else:
+                if "/*" in content:
+                    in_block_comment_del = True
+                if in_block_comment_del:
+                    if "*/" in content:
+                        in_block_comment_del = False
+                    continue
+                if "*/" in content:
+                    continue
+                if content.startswith('#') or content.startswith('//'):
+                    continue
 
             # 1. Parse Terraform resource additions/deletions
             m_res = tf_resource_re.match(content)
@@ -75,27 +118,68 @@ def analyze_diff(diff_content):
                 continue
 
             # 2.5. Parse Kubernetes additions/deletions
-            m_kind = k8s_kind_re.match(content)
-            if m_kind:
-                kind_val = m_kind.group(1)
-                if is_added:
-                    last_added_kind = kind_val
-                else:
-                    last_deleted_kind = kind_val
-                continue
+            if is_added:
+                # Track exiting metadata block
+                if in_metadata_add and indent <= metadata_indent_add:
+                    if content: # non-empty line exits metadata if at or above its indentation
+                        in_metadata_add = False
+                        metadata_indent_add = -1
 
-            m_name = k8s_name_re.match(content)
-            if m_name:
-                name_val = m_name.group(1)
-                if is_added and last_added_kind:
-                    item = f"Kubernetes resource `{last_added_kind}.{name_val}`"
-                    file_deltas[current_file]["added"].append(item)
-                    last_added_kind = None
-                elif not is_added and last_deleted_kind:
-                    item = f"Kubernetes resource `{last_deleted_kind}.{name_val}`"
-                    file_deltas[current_file]["deleted"].append(item)
-                    last_deleted_kind = None
-                continue
+                if k8s_metadata_re.match(content):
+                    in_metadata_add = True
+                    metadata_indent_add = indent
+                    continue
+
+                m_kind = k8s_kind_re.match(content)
+                if m_kind:
+                    k8s_added_kind = m_kind.group(1)
+                    if k8s_added_name:
+                        item = f"Kubernetes resource `{k8s_added_kind}.{k8s_added_name}`"
+                        file_deltas[current_file]["added"].append(item)
+                        k8s_added_kind = None
+                        k8s_added_name = None
+                    continue
+
+                m_name = k8s_name_re.match(content)
+                if m_name and in_metadata_add:
+                    k8s_added_name = m_name.group(1)
+                    if k8s_added_kind:
+                        item = f"Kubernetes resource `{k8s_added_kind}.{k8s_added_name}`"
+                        file_deltas[current_file]["added"].append(item)
+                        k8s_added_kind = None
+                        k8s_added_name = None
+                    continue
+            else:
+                # Track exiting metadata block
+                if in_metadata_del and indent <= metadata_indent_del:
+                    if content:
+                        in_metadata_del = False
+                        metadata_indent_del = -1
+
+                if k8s_metadata_re.match(content):
+                    in_metadata_del = True
+                    metadata_indent_del = indent
+                    continue
+
+                m_kind = k8s_kind_re.match(content)
+                if m_kind:
+                    k8s_deleted_kind = m_kind.group(1)
+                    if k8s_deleted_name:
+                        item = f"Kubernetes resource `{k8s_deleted_kind}.{k8s_deleted_name}`"
+                        file_deltas[current_file]["deleted"].append(item)
+                        k8s_deleted_kind = None
+                        k8s_deleted_name = None
+                    continue
+
+                m_name = k8s_name_re.match(content)
+                if m_name and in_metadata_del:
+                    k8s_deleted_name = m_name.group(1)
+                    if k8s_deleted_kind:
+                        item = f"Kubernetes resource `{k8s_deleted_kind}.{k8s_deleted_name}`"
+                        file_deltas[current_file]["deleted"].append(item)
+                        k8s_deleted_kind = None
+                        k8s_deleted_name = None
+                    continue
 
 
             # 3. Parse general property modifications (FinOps SKUs, tags, compliance keys)

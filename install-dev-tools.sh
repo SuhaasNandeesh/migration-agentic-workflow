@@ -204,6 +204,16 @@ check_and_install_brew "gitleaks" "gitleaks" "Security"
 check_and_install_brew "trufflehog" "trufflehog" "Security"
 check_and_install_pip "detect-secrets" "detect-secrets" "Security"
 
+# Python User Packages Bin Directory PATH verification
+PY_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)
+if [[ -n "$PY_VERSION" ]]; then
+  USER_PY_BIN="$HOME/Library/Python/$PY_VERSION/bin"
+  if [[ -d "$USER_PY_BIN" && ":$PATH:" != *":$USER_PY_BIN:"* ]]; then
+    echo -e "      ${YELLOW}⚠️  Warning: User Python package binary directory is not in your PATH: ${USER_PY_BIN}${NC}"
+    echo -e "         To execute pip-installed commands (like 'detect-secrets') directly, please add it to your PATH."
+  fi
+fi
+
 # Category 5: Git Integration
 echo -e "\n${BOLD}[5] Shell Integrations Category${NC}"
 check_and_install_brew "gh" "gh" "Git"
@@ -245,9 +255,13 @@ if command -v pi &>/dev/null; then
       NEW_SCOPE_DIR="$GLOBAL_NODE_ROOT/@earendil-works/pi-coding-agent"
       if [[ -d "$OLD_SCOPE_DIR" && ! -d "$NEW_SCOPE_DIR" ]]; then
         echo -e "  Found older @mariozechner package. Creating backward-compatible symlink alias under @earendil-works..."
-        mkdir -p "$GLOBAL_NODE_ROOT/@earendil-works" &>/dev/null
-        ln -sf "$OLD_SCOPE_DIR" "$NEW_SCOPE_DIR" &>/dev/null
-        echo -e "      ${GREEN}✓ Created @earendil-works compat alias symlink.${NC}"
+        if [ -w "$GLOBAL_NODE_ROOT" ]; then
+          mkdir -p "$GLOBAL_NODE_ROOT/@earendil-works"
+          ln -sf "$OLD_SCOPE_DIR" "$NEW_SCOPE_DIR"
+          echo -e "      ${GREEN}✓ Created @earendil-works compat alias symlink.${NC}"
+        else
+          echo -e "      ${YELLOW}⚠️  Note: Insufficient write permissions on $GLOBAL_NODE_ROOT. Run with sudo: 'sudo mkdir -p $GLOBAL_NODE_ROOT/@earendil-works && sudo ln -sf $OLD_SCOPE_DIR $NEW_SCOPE_DIR' manually to resolve backward-compatibility scope. Skipping.${NC}"
+        fi
       fi
 
       if [[ -z "$NODE_PATH" || "$NODE_PATH" != *"$GLOBAL_NODE_ROOT"* ]]; then

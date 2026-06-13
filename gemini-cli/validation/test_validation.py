@@ -206,6 +206,11 @@ resource "azurerm_resource_group" "rg" {
     
     cmd = ["bash", runner_script, mock_tf_dir]
     
+    # Clean up stale results before running
+    results_path = os.path.join(BASE_DIR, "output", "artifacts", "test-results.json")
+    if os.path.exists(results_path):
+        os.remove(results_path)
+
     # We must run it from BASE_DIR since the script outputs results to "output/artifacts"
     # which is relative to the current working directory of the command execution
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=BASE_DIR)
@@ -218,8 +223,10 @@ resource "azurerm_resource_group" "rg" {
     print(res.stderr)
     print("--------------------------")
 
+    # Assert the wrapper exited cleanly (code 0)
+    assert res.returncode == 0, f"Expected returncode 0 for mock test runner, got {res.returncode}. STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+
     # The script outputs results to BASE_DIR/output/artifacts/test-results.json
-    results_path = os.path.join(BASE_DIR, "output", "artifacts", "test-results.json")
     if not os.path.exists(results_path):
         print(f"[❌] Error: Expected test results JSON at {results_path} was not found!")
         sys.exit(1)

@@ -9,9 +9,19 @@ set -eo pipefail
 
 TARGET_DIR="${1:-.}"
 TEST_FILE="${TARGET_DIR}/validation.tftest.hcl"
-RESULT_FILE="output/artifacts/test-results.json"
 
+# Ensure output directory is created in the original execution directory
 mkdir -p "output/artifacts"
+# Resolve output result path as absolute before changing directory
+RESULT_FILE="$(pwd)/output/artifacts/test-results.json"
+
+# Resolve a working Python 3 command dynamically
+PYTHON_CMD="python3"
+if [ -x "/usr/bin/python3" ]; then
+  PYTHON_CMD="/usr/bin/python3"
+elif [ -x "/opt/homebrew/bin/python3" ]; then
+  PYTHON_CMD="/opt/homebrew/bin/python3"
+fi
 
 echo "=== Initializing Local Mock Validation in: ${TARGET_DIR} ==="
 
@@ -51,7 +61,7 @@ if [ ! -f "${CONFIG_PATH}" ]; then
 fi
 
 # Generate mock test suite dynamically using dynamic variables extracted from config
-CONFIG_PATH="${CONFIG_PATH}" python3 -c '
+CONFIG_PATH="${CONFIG_PATH}" "$PYTHON_CMD" -c '
 import json
 import sys
 import os
@@ -122,8 +132,10 @@ echo "Running: terraform validate"
 VALIDATE_OUTPUT=$(terraform validate -json 2>&1 || true)
 
 echo "Running: terraform test"
-TEST_OUTPUT=$(terraform test 2>&1 || true)
+set +e
+TEST_OUTPUT=$(terraform test 2>&1)
 TEST_EXIT=$?
+set -e
 
 # Clean up local mock suite
 rm -f "validation.tftest.hcl"
@@ -131,11 +143,11 @@ cd - > /dev/null
 
 # Parse results and output JSON
 STATUS="pass"
-if [ $TEST_EXIT -ne 0 ] || [[ "${VALIDATE_OUTPUT}" =~ \"valid\"[[:space:]]*:[[:space:]]*false ]]; then
+if [ $TEST_EXIT -ne 0 ] || ! [[ "${VALIDATE_OUTPUT}" =~ \"valid\"[[:space:]]*:[[:space:]]*true ]]; then
   STATUS="fail"
 fi
 
-python3 -c '
+"$PYTHON_CMD" -c '
 import json
 import sys
 import re
@@ -149,7 +161,7 @@ result_file = sys.argv[6]
 test_exit = int(sys.argv[7])
 
 fmt_status = "pass" if not fmt_output.strip() else "fail"
-validate_status = "fail" if re.search(r"\"valid\"\s*:\s*false", validate_output) else "pass"
+validate_status = "pass" if re.search(r"\"valid\"\s*:\s*true", validate_output) else "fail"
 test_status = "pass" if test_exit == 0 else "fail"
 
 result_data = {

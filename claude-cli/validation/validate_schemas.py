@@ -32,10 +32,37 @@ class NativeSchemaValidator:
         # 2. Check types and recurse
         if "type" in schema:
             expected_type = schema["type"]
-            if expected_type == "object":
-                if not isinstance(data, dict):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be an object, but got {type(data).__name__}")
-                else:
+            types = expected_type if isinstance(expected_type, list) else [expected_type]
+            
+            def check_type(val, t):
+                if t == "object":
+                    return isinstance(val, dict)
+                elif t == "array":
+                    return isinstance(val, list)
+                elif t == "string":
+                    return isinstance(val, str)
+                elif t == "integer":
+                    return isinstance(val, int) and not isinstance(val, bool)
+                elif t == "number":
+                    return isinstance(val, (int, float)) and not isinstance(val, bool)
+                elif t == "boolean":
+                    return isinstance(val, bool)
+                elif t == "null":
+                    return val is None
+                return True
+
+            type_matched = False
+            for t in types:
+                if check_type(data, t):
+                    type_matched = True
+                    break
+
+            if not type_matched:
+                type_names = ", ".join(types)
+                self.errors.append(f"Field '{path or 'root'}' is expected to be one of [{type_names}], but got {type(data).__name__}")
+            else:
+                # Recurse if matched type is object or array and data matches that type
+                if isinstance(data, dict) and "object" in types:
                     properties = schema.get("properties", {})
                     # Validate existing properties
                     for key, val in data.items():
@@ -51,27 +78,11 @@ class NativeSchemaValidator:
                         for key, val in data.items():
                             if key not in properties:
                                 self.validate(val, additional_properties, f"{path}.{key}" if path else key)
-            elif expected_type == "array":
-                if not isinstance(data, list):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be an array, but got {type(data).__name__}")
-                else:
+                elif isinstance(data, list) and "array" in types:
                     items_schema = schema.get("items")
                     if items_schema:
                         for idx, item in enumerate(data):
                             self.validate(item, items_schema, f"{path or 'root'}[{idx}]")
-            elif expected_type == "string":
-                if not isinstance(data, str):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be a string, but got {type(data).__name__}")
-            elif expected_type == "integer":
-                # Note: bool is a subclass of int in Python, so check explicitly
-                if not isinstance(data, int) or isinstance(data, bool):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be an integer, but got {type(data).__name__}")
-            elif expected_type == "number":
-                if not isinstance(data, (int, float)) or isinstance(data, bool):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be a number, but got {type(data).__name__}")
-            elif expected_type == "boolean":
-                if not isinstance(data, bool):
-                    self.errors.append(f"Field '{path or 'root'}' is expected to be a boolean, but got {type(data).__name__}")
 
         # 3. Check enum constraints
         if "enum" in schema and isinstance(schema["enum"], list):
